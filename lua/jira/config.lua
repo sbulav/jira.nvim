@@ -17,9 +17,9 @@ M.defaults = {
   display = {
     type_icons = {
       Bug = "󰃤",
-      Story = "",
-      Task = "",
-      ["Sub-task"] = "",
+      Story = "",
+      Task = "",
+      ["Sub-task"] = "",
       Epic = "󱐋",
       default = "󰄮",
     },
@@ -53,6 +53,7 @@ M.defaults = {
 }
 
 ---@type jira.Config
+---@diagnostic disable-next-line: missing-fields
 M.options = {}
 
 ---Setup configuration with user options
