@@ -10,9 +10,19 @@ function M.jira_issue_preview(ctx)
     return
   end
 
+  -- Get type icon
+  local type_icon = {
+    Bug = "󰃤",
+    Story = "",
+    Task = "",
+    ["Sub-task"] = "",
+    Epic = "󱐋",
+  }
+  local icon = type_icon[item.type] or "󰄮"
+
   -- Build preview text
   local lines = {
-    "# " .. item.key,
+    "# " .. icon .. " " .. item.key,
     "",
     "**Type**: " .. (item.type or "Unknown"),
     "**Assignee**: " .. (item.assignee or "Unassigned"),
