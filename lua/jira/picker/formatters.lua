@@ -36,14 +36,9 @@ function M.jira_issues(item, picker)
   local ret = {}
 
   -- Type badge with icon (more compact)
-  local type_icon = {
-    Bug = "󰃤",
-    Story = "",
-    Task = "",
-    ["Sub-task"] = "",
-    Epic = "󱐋",
-  }
-  local icon = type_icon[item.type] or "󰄮"
+  local config = require("jira.config").options
+  local type_icons = config.type_icons
+  local icon = type_icons[item.type] or type_icons.default
   local type_hl = TYPE_HIGHLIGHTS[item.type] or "Comment"
 
   ret[#ret + 1] = { icon .. " ", type_hl }

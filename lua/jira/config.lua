@@ -9,6 +9,14 @@ M.defaults = {
   order_by = "status",
   paginate = "0:100",
   debug = false,
+  type_icons = {
+    Bug = "󰃤",
+    Story = "",
+    Task = "",
+    ["Sub-task"] = "",
+    Epic = "󱐋",
+    default = "󰄮",
+  },
   keymaps = {
     open_browser = "<cr>",
     copy_key = "y",
