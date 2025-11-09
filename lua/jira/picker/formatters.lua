@@ -75,10 +75,9 @@ function M.jira_issues(item, picker)
     local labels = vim.split(item.labels, ",")
     for i, label in ipairs(labels) do
       if i > 1 then
-        ret[#ret + 1] = { ",", "Comment" }
+        ret[#ret + 1] = { " ", "Comment" }
       end
-      ret[#ret + 1] = { "", "Comment" }
-      ret[#ret + 1] = { label, "Comment" }
+      ret[#ret + 1] = { "#" .. label, "Comment" }
     end
   end
 
