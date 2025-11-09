@@ -1,0 +1,7 @@
+---@class jira.Config
+---@field jira_cmd string Path to jira CLI binary
+---@field jira_base_url? string JIRA instance base URL (auto-detected if nil)
+---@field columns string[] Columns to display
+---@field filters string[] Default filters for sprint list
+---@field order_by string Sort order field
+---@field keymaps table<string, string> Custom keymaps
