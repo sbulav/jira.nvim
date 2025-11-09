@@ -38,8 +38,6 @@ function M.jira_issues(opts, ctx)
 
   -- Use snacks proc to run the command
   local first_line = true
-  local count = 0
-  local line_count = 0
   return require("snacks.picker.source.proc").proc(
     ctx:opts({
       cmd = config.jira_cmd,
@@ -47,13 +45,6 @@ function M.jira_issues(opts, ctx)
       notify = true,
       ---@param item snacks.picker.finder.Item
       transform = function(item)
-        line_count = line_count + 1
-        if config.debug then
-          vim.schedule(function()
-            vim.notify(string.format("Received line #%d: %s", line_count, item.text:sub(1, 60)), vim.log.levels.INFO)
-          end)
-        end
-
         -- Skip header line
         if first_line then
           first_line = false
@@ -65,11 +56,6 @@ function M.jira_issues(opts, ctx)
 
         -- Validate we have enough columns (don't filter empty strings)
         if #values < #columns then
-          if config.debug then
-            vim.schedule(function()
-              vim.notify(string.format("Skipping line: expected %d columns, got %d", #columns, #values), vim.log.levels.WARN)
-            end)
-          end
           return false
         end
 
@@ -77,14 +63,6 @@ function M.jira_issues(opts, ctx)
         local issue = {}
         for i, col in ipairs(columns) do
           issue[col] = values[i] or ""
-        end
-
-        -- Debug logging
-        count = count + 1
-        if config.debug then
-          vim.schedule(function()
-            vim.notify(string.format("Processing issue #%d: %s", count, issue.key or ""), vim.log.levels.INFO)
-          end)
         end
 
         -- Return picker item
