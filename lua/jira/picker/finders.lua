@@ -22,6 +22,10 @@ function M.jira_issues(opts, ctx)
   local order_by = opts.order_by or config.order_by
   vim.list_extend(args, { "--order-by", order_by })
 
+  -- Add pagination
+  local paginate = opts.paginate or config.paginate
+  vim.list_extend(args, { "--paginate", paginate })
+
   -- Add format
   local columns = opts.columns or config.columns
   vim.list_extend(args, { "--plain", "--columns", table.concat(columns, ",") })
