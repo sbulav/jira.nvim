@@ -82,10 +82,13 @@ function M.jira_issues(opts, ctx)
           return false
         end
 
-        -- Map values to column names
+        -- Map values to column names and fix JIRA CLI CSV escaping bug
         local issue = {}
         for i, col in ipairs(columns) do
-          issue[col] = values[i] or ""
+          local value = values[i] or ""
+          -- Fix JIRA CLI bug: [text[] should be [text]
+          value = value:gsub("%[([^%]]+)%[%]", "[%1]")
+          issue[col] = value
         end
 
         -- Return picker item
