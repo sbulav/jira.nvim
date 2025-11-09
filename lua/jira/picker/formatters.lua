@@ -47,8 +47,6 @@ function M.jira_issues(item, picker)
   local type_hl = TYPE_HIGHLIGHTS[item.type] or "Comment"
 
   ret[#ret + 1] = { icon .. " ", type_hl }
-  ret[#ret + 1] = { pad_to_width(item.type or "Unknown", 8), type_hl }
-  ret[#ret + 1] = { " " }
 
   -- Issue key (compact)
   ret[#ret + 1] = { pad_to_width(item.key or "", 10), "Special" }
