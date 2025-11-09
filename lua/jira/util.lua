@@ -4,7 +4,7 @@ local M = {}
 ---@return boolean
 function M.has_jira_cli()
   local config = require("jira.config").options
-  return vim.fn.executable(config.jira_cmd) == 1
+  return vim.fn.executable(config.cli.cmd) == 1
 end
 
 ---Validate configuration
@@ -13,7 +13,7 @@ end
 ---@return string? error
 function M.validate_config(config)
   if not M.has_jira_cli() then
-    return false, "jira CLI not found in PATH: " .. config.jira_cmd
+    return false, "jira CLI not found in PATH: " .. config.cli.cmd
   end
   return true
 end
@@ -24,8 +24,8 @@ function M.get_jira_base_url()
   local config = require("jira.config").options
 
   -- Check config first
-  if config.jira_base_url then
-    return config.jira_base_url
+  if config.cli.base_url then
+    return config.cli.base_url
   end
 
   -- Check environment variable
@@ -35,7 +35,7 @@ function M.get_jira_base_url()
   end
 
   -- Try to extract from jira CLI config
-  local result = vim.system({ config.jira_cmd, "config", "get", "server" }, { text = true }):wait()
+  local result = vim.system({ config.cli.cmd, "config", "get", "server" }, { text = true }):wait()
   if result.code == 0 and result.stdout then
     return vim.trim(result.stdout)
   end

@@ -99,7 +99,7 @@ function M.jira_view_cli(picker, item, action)
 
   -- Open in terminal
   vim.cmd("tabnew")
-  vim.fn.termopen({ config.jira_cmd, "issue", "view", item.key }, {
+  vim.fn.termopen({ config.cli.cmd, "issue", "view", item.key }, {
     on_exit = function(_, code)
       if code ~= 0 then
         vim.notify("Failed to view issue", vim.log.levels.ERROR)
@@ -120,7 +120,7 @@ function M.jira_transition(picker, item, action)
 
   -- Get available transitions
   local config = require("jira.config").options
-  local cmd = { config.jira_cmd, "issue", "transitions", item.key, "--plain" }
+  local cmd = { config.cli.cmd, "issue", "transitions", item.key, "--plain" }
 
   if config.debug then
     vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
@@ -149,7 +149,7 @@ function M.jira_transition(picker, item, action)
     end
 
     -- Execute transition
-    local move_cmd = { config.jira_cmd, "issue", "move", item.key, choice }
+    local move_cmd = { config.cli.cmd, "issue", "move", item.key, choice }
 
     if config.debug then
       vim.notify("JIRA CLI Command:\n" .. table.concat(move_cmd, " "), vim.log.levels.INFO)

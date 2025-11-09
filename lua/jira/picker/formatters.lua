@@ -18,9 +18,9 @@ function M.jira_issues(item, picker)
 
   -- Type badge with icon (more compact)
   local config = require("jira.config").options
-  local type_icons = config.type_icons
+  local type_icons = config.display.type_icons
   local icon = type_icons[item.type] or type_icons.default
-  local type_highlights = config.type_highlights
+  local type_highlights = config.display.type_highlights
   local type_hl = type_highlights[item.type] or "Comment"
 
   ret[#ret + 1] = { icon .. " ", type_hl }
@@ -39,7 +39,7 @@ function M.jira_issues(item, picker)
 
   -- Status badge (compact)
   local status = item.status or "Unknown"
-  local status_highlights = config.status_highlights
+  local status_highlights = config.display.status_highlights
   local status_hl = status_highlights[status] or "Comment"
   ret[#ret + 1] = { pad_to_width(status, 22), status_hl }
   ret[#ret + 1] = { " " }

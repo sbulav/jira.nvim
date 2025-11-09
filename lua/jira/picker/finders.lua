@@ -15,24 +15,24 @@ function M.jira_issues(opts, ctx)
   local args = { "sprint", "list", "--current" }
 
   -- Add filters
-  local filters = opts.filters or config.filters
+  local filters = opts.filters or config.query.filters
   vim.list_extend(args, filters)
 
   -- Add order
-  local order_by = opts.order_by or config.order_by
+  local order_by = opts.order_by or config.query.order_by
   vim.list_extend(args, { "--order-by", order_by })
 
   -- Add pagination
-  local paginate = opts.paginate or config.paginate
+  local paginate = opts.paginate or config.query.paginate
   vim.list_extend(args, { "--paginate", paginate })
 
   -- Add format
-  local columns = opts.columns or config.columns
+  local columns = opts.columns or config.query.columns
   vim.list_extend(args, { "--csv", "--columns", table.concat(columns, ",") })
 
   -- Debug: print command
   if config.debug then
-    local cmd_str = config.jira_cmd .. " " .. table.concat(args, " ")
+    local cmd_str = config.cli.cmd .. " " .. table.concat(args, " ")
     vim.notify("JIRA CLI Command:\n" .. cmd_str, vim.log.levels.INFO)
   end
 
@@ -63,7 +63,7 @@ function M.jira_issues(opts, ctx)
   local first_line = true
   return require("snacks.picker.source.proc").proc(
     ctx:opts({
-      cmd = config.jira_cmd,
+      cmd = config.cli.cmd,
       args = args,
       notify = true,
       ---@param item snacks.picker.finder.Item

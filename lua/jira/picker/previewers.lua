@@ -12,8 +12,8 @@ function M.jira_issue_preview(ctx)
 
   -- Get type icon from config
   local config = require("jira.config").options
-  local type_icons = config.type_icons
-  local icon = type_icons[item.type] or config.type_icons.default
+  local type_icons = config.display.type_icons
+  local icon = type_icons[item.type] or type_icons.default
 
   -- Build preview text
   local lines = {

@@ -34,7 +34,7 @@ function M.execute(args, callback)
   local config = require("jira.config").options
 
   vim.system(
-    vim.list_extend({ config.jira_cmd }, args),
+    vim.list_extend({ config.cli.cmd }, args),
     { text = true },
     vim.schedule_wrap(callback)
   )
@@ -51,15 +51,15 @@ function M.get_sprint_issues(opts, callback)
   local args = { "sprint", "list", "--current" }
 
   -- Add filters
-  local filters = opts.filters or config.filters
+  local filters = opts.filters or config.query.filters
   vim.list_extend(args, filters)
 
   -- Add order
-  local order_by = opts.order_by or config.order_by
+  local order_by = opts.order_by or config.query.order_by
   vim.list_extend(args, { "--order-by", order_by })
 
   -- Add format
-  local columns = opts.columns or config.columns
+  local columns = opts.columns or config.query.columns
   vim.list_extend(args, { "--plain", "--columns", table.concat(columns, ",") })
 
   -- Execute command
