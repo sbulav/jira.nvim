@@ -16,7 +16,6 @@ M.jira_issues = {
         ["<CR>"] = "jira_actions",
         ["y"] = "jira_copy_key",
         ["Y"] = "jira_copy_key",
-        ["K"] = "jira_show_details",
         ["gt"] = "jira_transition",
       },
     },

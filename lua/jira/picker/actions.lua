@@ -48,49 +48,6 @@ local function jira_copy_key(picker, item, action)
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
 
---- Show full issue details in floating window
----@param picker snacks.Picker
----@param item snacks.picker.Item
----@param action snacks.picker.Action
-local function jira_show_details(picker, item, action)
-  local lines = {
-    "# " .. (item.key or "Unknown"),
-    "",
-    "**Type**: " .. (item.type or "Unknown"),
-    "**Assignee**: " .. (item.assignee or "Unassigned"),
-    "**Status**: " .. (item.status or "Unknown"),
-    "**Labels**: " .. (item.labels or "None"),
-    "",
-    "## Summary",
-    item.summary or "No summary available",
-  }
-
-  -- Create floating window
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
-  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-
-  local width = math.min(80, vim.o.columns - 4)
-  local height = math.min(#lines + 2, vim.o.lines - 4)
-
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    col = math.floor((vim.o.columns - width) / 2),
-    row = math.floor((vim.o.lines - height) / 2),
-    style = "minimal",
-    border = "rounded",
-    title = " Issue Details ",
-    title_pos = "center",
-  })
-
-  -- Close on q or <Esc>
-  vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf, nowait = true })
-  vim.keymap.set("n", "<Esc>", "<cmd>close<cr>", { buffer = buf, nowait = true })
-end
-
 --- Transition issue to different status
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
@@ -298,14 +255,6 @@ M.actions.comment = {
   action = jira_comment,
 }
 
-M.actions.show_details = {
-  name = "Show details",
-  desc = "Show full issue details in floating window",
-  icon = "📄",
-  priority = 40,
-  action = jira_show_details,
-}
-
 --- Get available actions for an item
 ---@param item snacks.picker.Item
 ---@param ctx table?
@@ -356,7 +305,6 @@ end
 -- Backward compatibility: export individual action functions
 M.jira_open_browser = jira_open_browser
 M.jira_copy_key = jira_copy_key
-M.jira_show_details = jira_show_details
 M.jira_transition = jira_transition
 
 return M
