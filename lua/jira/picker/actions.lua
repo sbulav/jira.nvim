@@ -48,6 +48,53 @@ local function jira_copy_key(picker, item, action)
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
 
+--- Get available transitions for an issue
+---@param issue_key string
+---@param callback fun(transitions: string[]?)
+local function get_transitions(issue_key, callback)
+  local config = require("jira.config").options
+
+  -- Spawn jira move command which shows interactive prompt with transitions
+  local stdout_chunks = {}
+  local job_id = vim.fn.jobstart({ config.cli.cmd, "issue", "move", issue_key }, {
+    stdout_buffered = false,
+    on_stdout = function(_, data, _)
+      for _, line in ipairs(data) do
+        if line ~= "" then
+          table.insert(stdout_chunks, line)
+        end
+      end
+    end,
+    on_exit = function(_, code, _)
+      -- Process terminated, parse output
+      local output = table.concat(stdout_chunks, "\n")
+
+      -- Parse transitions from the interactive prompt
+      -- Format: "  State Name" or "> State Name" (for selected)
+      local transitions = {}
+      for line in output:gmatch("[^\r\n]+") do
+        -- Match lines that start with ANSI codes followed by > or spaces, then capture the state name
+        local state = line:match("%[0;39m%s+(.-)%[0m") or line:match("%[0;1;36m>%s*(.-)%[0m")
+        if state and state ~= "" then
+          table.insert(transitions, state)
+        end
+      end
+
+      callback(#transitions > 0 and transitions or nil)
+    end,
+  })
+
+  if job_id <= 0 then
+    callback(nil)
+    return
+  end
+
+  -- Give it a moment to output the prompt, then kill it
+  vim.defer_fn(function()
+    vim.fn.jobstop(job_id)
+  end, 500)
+end
+
 --- Transition issue to different status
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
@@ -60,44 +107,44 @@ local function jira_transition(picker, item, action)
 
   local config = require("jira.config").options
 
-  -- Common JIRA transitions - can be customized via config
-  local transitions = {
-    "To Do",
-    "In Progress",
-    "In Review",
-    "Done",
-    "Blocked",
-    "Backlog",
-    "Ready for QA",
-    "QA",
-    "Closed",
-  }
-
-  vim.ui.select(transitions, {
-    prompt = "Select transition:",
-  }, function(choice)
-    if not choice then
+  -- Get available transitions dynamically
+  get_transitions(item.key, function(transitions)
+    if not transitions then
+      vim.notify("Failed to fetch transitions", vim.log.levels.ERROR)
       return
     end
 
-    -- Execute transition
-    local move_cmd = { config.cli.cmd, "issue", "move", item.key, choice }
-
-    if config.debug then
-      vim.notify("JIRA CLI Command:\n" .. table.concat(move_cmd, " "), vim.log.levels.INFO)
+    if #transitions == 0 then
+      vim.notify("No transitions available", vim.log.levels.INFO)
+      return
     end
 
-    local transition_result = vim.system(move_cmd, { text = true }):wait()
+    vim.ui.select(transitions, {
+      prompt = "Select transition:",
+    }, function(choice)
+      if not choice then
+        return
+      end
 
-    if transition_result.code == 0 then
-      vim.notify(string.format("Transitioned %s to %s", item.key, choice), vim.log.levels.INFO)
-      picker:refresh()
-    else
-      vim.notify(
-        string.format("Failed to transition %s: %s", item.key, transition_result.stderr or "Unknown error"),
-        vim.log.levels.ERROR
-      )
-    end
+      -- Execute transition
+      local move_cmd = { config.cli.cmd, "issue", "move", item.key, choice }
+
+      if config.debug then
+        vim.notify("JIRA CLI Command:\n" .. table.concat(move_cmd, " "), vim.log.levels.INFO)
+      end
+
+      local transition_result = vim.system(move_cmd, { text = true }):wait()
+
+      if transition_result.code == 0 then
+        vim.notify(string.format("Transitioned %s to %s", item.key, choice), vim.log.levels.INFO)
+        picker:refresh()
+      else
+        vim.notify(
+          string.format("Failed to transition %s: %s", item.key, transition_result.stderr or "Unknown error"),
+          vim.log.levels.ERROR
+        )
+      end
+    end)
   end)
 end
 
