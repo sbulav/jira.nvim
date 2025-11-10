@@ -92,6 +92,14 @@ local function transform_to_markdown(lines)
       local trimmed = trim_line(line)
       if in_comments_section and trimmed:match("^[^•]+•[^•]+") and not trimmed:match("^%s*$") then
         -- This is a comment author line
+
+        -- Close any open code block before the comment header
+        if in_code_block then
+          table.insert(result, "```")
+          table.insert(result, "")
+          in_code_block = false
+        end
+
         -- Check if it's the latest comment
         local is_latest = trimmed:match("•%s*Latest comment")
 
@@ -145,13 +153,19 @@ local function transform_to_markdown(lines)
         end
       end
 
-      -- Detect code blocks (stack traces with file paths and line numbers)
+      -- Detect code blocks (stack traces, JSON, and heavily indented content)
+      local trimmed_for_detection = trim_line(line)
       local is_code_line = line:match("%.rb:%d+") or
                            line:match("%.py:%d+") or
                            line:match("%.java:%d+") or
                            line:match("^%s+%.%.%.%s*$") or
                            line:match("^%s+%(.*frame") or
-                           (line:match("^%s%s%s%s+%S") and not line:match("^%s+[%u%d%-]+%s"))
+                           (line:match("^%s%s%s%s+%S") and not line:match("^%s+[%u%d%-]+%s")) or
+                           -- JSON patterns
+                           trimmed_for_detection:match('^"[^"]*":%s*["{%[]') or  -- JSON key starting object/array
+                           trimmed_for_detection:match('^"[^"]*":%s*') or        -- JSON key-value
+                           trimmed_for_detection:match('^%s*["}%]],?%s*$') or    -- Closing braces/brackets
+                           (trimmed_for_detection:match('^%s+') and trimmed_for_detection:match('"[^"]*":%s*'))
 
       if is_code_line and not in_code_block then
         -- Start code block
