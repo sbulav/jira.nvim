@@ -4,8 +4,6 @@ M.jira_issues = {
   finder = require("jira.picker.finders").jira_issues,
   format = "jira_issues",
   preview = "jira_issue_preview",
-  live = false,
-  limit = math.huge,
   confirm = "jira_actions",
 
   win = {
