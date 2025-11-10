@@ -69,7 +69,10 @@ local function transform_to_markdown(lines)
         table.insert(result, "")
         in_code_block = false
       end
-      table.insert(result, "")
+      -- Add blank line before section header if last line isn't blank
+      if #result > 0 and result[#result] ~= "" then
+        table.insert(result, "")
+      end
       table.insert(result, "## " .. section)
 
       -- Check if this is the Comments section
