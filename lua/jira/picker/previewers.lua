@@ -73,20 +73,28 @@ local function transform_to_markdown(lines)
       if #result > 0 and result[#result] ~= "" then
         table.insert(result, "")
       end
-      table.insert(result, "## " .. section)
 
-      -- Check if this is the Comments section
+      -- Add emoji to section header based on type
+      local emoji = ""
       if section:match("^%d+%s+Comments?$") then
+        emoji = "💬 "
         in_comments_section = true
         first_comment = true
         in_linked_issues_section = false
       elseif section:match("Linked Issues") then
+        emoji = "🔗 "
         in_linked_issues_section = true
         in_comments_section = false
+      elseif section:match("Description") then
+        emoji = "📝 "
+        in_comments_section = false
+        in_linked_issues_section = false
       else
         in_comments_section = false
         in_linked_issues_section = false
       end
+
+      table.insert(result, "## " .. emoji .. section)
     else
       -- Detect comment author lines (Name • Date format)
       local trimmed = trim_line(line)
