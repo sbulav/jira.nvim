@@ -8,25 +8,10 @@ function M.get_actions(opts, ctx)
   -- Get actions for the current item
   local actions = actions_module.get_actions(item, ctx)
 
-  -- Convert actions to picker items, sorted by priority
   local items = {}
-  local issue_key = item and item.key or ""
-
   for name, action_def in pairs(actions) do
-    -- Build descriptive text with issue key where appropriate
-    local text
-    if name == "open_browser" or name == "view_cli" or name == "show_details" then
-      text = string.format("%s %s", action_def.icon or "", action_def.desc)
-    elseif name == "copy_key" then
-      text = string.format("%s Copy %s to clipboard", action_def.icon or "", issue_key)
-    elseif name == "transition" or name == "assign_me" or name == "unassign" or name == "comment" then
-      text = string.format("%s %s", action_def.icon or "", action_def.desc)
-    else
-      text = string.format("%s %s", action_def.icon or "", action_def.name)
-    end
-
     table.insert(items, {
-      text = text,
+      text = string.format("%s %s", action_def.icon or "", action_def.name),
       name = name,
       desc = action_def.desc,
       action = action_def,

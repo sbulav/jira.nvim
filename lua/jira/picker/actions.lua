@@ -261,23 +261,20 @@ end
 --- Define all actions with metadata
 M.actions.open_browser = {
   name = "Open in browser",
-  desc = "Open issue in browser",
   icon = " ",
   priority = 100,
   action = jira_open_browser,
 }
 
 M.actions.copy_key = {
-  name = "Copy key",
-  desc = "Copy issue key to clipboard",
+  name = "Copy key to clipboard",
   icon = " ",
   priority = 90,
   action = jira_copy_key,
 }
 
 M.actions.transition = {
-  name = "Move status",
-  desc = "Transition issue to different status",
+  name = "Edit status",
   icon = " ",
   priority = 80,
   action = jira_transition,
@@ -285,7 +282,6 @@ M.actions.transition = {
 
 M.actions.assign_me = {
   name = "Assign to me",
-  desc = "Assign issue to current user",
   icon = " ",
   priority = 70,
   action = jira_assign_me,
@@ -293,15 +289,13 @@ M.actions.assign_me = {
 
 M.actions.unassign = {
   name = "Unassign",
-  desc = "Remove assignee from issue",
   icon = " ",
   priority = 60,
   action = jira_unassign,
 }
 
 M.actions.comment = {
-  name = "Comment",
-  desc = "Add comment to issue",
+  name = "Add comment",
   icon = " ",
   priority = 50,
   action = jira_comment,

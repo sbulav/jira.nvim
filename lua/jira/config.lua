@@ -43,8 +43,6 @@ M.defaults = {
   keymaps = {
     open_browser = "<cr>",
     copy_key = "y",
-    show_details = "K",
-    view_cli = "gv",
     transition = "gt",
   },
 
