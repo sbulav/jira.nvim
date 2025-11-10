@@ -184,7 +184,17 @@ local function jira_assign_me(picker, item, action)
   end
 
   local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "issue", "assign", item.key, "@me" }
+
+  -- First get current user
+  local me_result = vim.system({ config.cli.cmd, "me" }, { text = true }):wait()
+
+  if me_result.code ~= 0 then
+    vim.notify("Failed to get current user", vim.log.levels.ERROR)
+    return
+  end
+
+  local me = vim.trim(me_result.stdout)
+  local cmd = { config.cli.cmd, "issue", "assign", item.key, me }
 
   if config.debug then
     vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
