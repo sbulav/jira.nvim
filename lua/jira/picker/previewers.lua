@@ -111,7 +111,12 @@ local function transform_to_markdown(lines)
       end
 
       -- Handle linked issues section
-      if in_linked_issues_section and trimmed ~= "" then
+      if in_linked_issues_section then
+        -- Skip empty lines in linked issues section
+        if trimmed == "" then
+          goto continue
+        end
+
         -- Detect relationship type lines (all-caps words like BLOCKS, CLONES, etc.)
         if trimmed:match("^[A-Z][A-Z%s]+$") then
           table.insert(result, "")
