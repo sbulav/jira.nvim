@@ -262,7 +262,7 @@ end
 M.actions.open_browser = {
   name = "Open in browser",
   desc = "Open issue in browser",
-  icon = "🌐",
+  icon = " ",
   priority = 100,
   action = jira_open_browser,
 }
@@ -270,7 +270,7 @@ M.actions.open_browser = {
 M.actions.copy_key = {
   name = "Copy key",
   desc = "Copy issue key to clipboard",
-  icon = "📋",
+  icon = " ",
   priority = 90,
   action = jira_copy_key,
 }
@@ -278,7 +278,7 @@ M.actions.copy_key = {
 M.actions.transition = {
   name = "Move status",
   desc = "Transition issue to different status",
-  icon = "🔄",
+  icon = " ",
   priority = 80,
   action = jira_transition,
 }
@@ -286,7 +286,7 @@ M.actions.transition = {
 M.actions.assign_me = {
   name = "Assign to me",
   desc = "Assign issue to current user",
-  icon = "👤",
+  icon = " ",
   priority = 70,
   action = jira_assign_me,
 }
@@ -294,7 +294,7 @@ M.actions.assign_me = {
 M.actions.unassign = {
   name = "Unassign",
   desc = "Remove assignee from issue",
-  icon = "👥",
+  icon = " ",
   priority = 60,
   action = jira_unassign,
 }
@@ -302,7 +302,7 @@ M.actions.unassign = {
 M.actions.comment = {
   name = "Comment",
   desc = "Add comment to issue",
-  icon = "💬",
+  icon = " ",
   priority = 50,
   action = jira_comment,
 }
