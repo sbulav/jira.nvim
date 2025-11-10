@@ -69,14 +69,25 @@ local function get_transitions(issue_key, callback)
       -- Process terminated, parse output
       local output = table.concat(stdout_chunks, "\n")
 
+      -- Strip all ANSI escape codes
+      local function strip_ansi(str)
+        -- Remove ANSI escape sequences: ESC [ ... m
+        return str:gsub("\27%[[%d;]*m", "")
+      end
+
       -- Parse transitions from the interactive prompt
       -- Format: "  State Name" or "> State Name" (for selected)
       local transitions = {}
       for line in output:gmatch("[^\r\n]+") do
-        -- Match lines that start with ANSI codes followed by > or spaces, then capture the state name
-        local state = line:match("%[0;39m%s+(.-)%[0m") or line:match("%[0;1;36m>%s*(.-)%[0m")
+        local cleaned = strip_ansi(line)
+        -- Match lines that start with spaces or >
+        local state = cleaned:match("^%s+(.+)$") or cleaned:match("^>%s*(.+)$")
         if state and state ~= "" then
-          table.insert(transitions, state)
+          -- Trim whitespace
+          state = state:match("^%s*(.-)%s*$")
+          if state ~= "" then
+            table.insert(transitions, state)
+          end
         end
       end
 
