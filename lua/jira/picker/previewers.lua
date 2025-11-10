@@ -88,10 +88,11 @@ local function transform_to_markdown(lines)
         table.insert(result, "```")
         table.insert(result, "")
         in_code_block = false
-        table.insert(result, line)
+        -- Strip leading 2 spaces from content lines
+        table.insert(result, (line:gsub("^  ", "")))
       else
-        -- Normal line
-        table.insert(result, line)
+        -- Normal line - strip leading 2 spaces from content lines
+        table.insert(result, (line:gsub("^  ", "")))
       end
     end
 
