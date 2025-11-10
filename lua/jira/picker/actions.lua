@@ -10,16 +10,19 @@ function M.jira_open_browser(picker, item, action)
     return
   end
 
-  local util = require("jira.util")
-  local base_url = util.get_jira_base_url()
-  local url = string.format("%s/browse/%s", base_url, item.key)
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd, "open", item.key }
 
-  -- Use vim.ui.open (Neovim 0.10+)
-  local ok, err = pcall(vim.ui.open, url)
-  if not ok then
-    vim.notify(string.format("Failed to open URL: %s", err), vim.log.levels.ERROR)
-  else
+  if config.debug then
+    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
+  end
+
+  local result = vim.system(cmd, { text = true }):wait()
+
+  if result.code == 0 then
     vim.notify(string.format("Opened %s in browser", item.key), vim.log.levels.INFO)
+  else
+    vim.notify(string.format("Failed to open %s: %s", item.key, result.stderr or "Unknown error"), vim.log.levels.ERROR)
   end
 end
 

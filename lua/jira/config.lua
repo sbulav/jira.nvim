@@ -4,7 +4,6 @@ local M = {}
 M.defaults = {
   cli = {
     cmd = "jira",
-    base_url = nil,
   },
 
   query = {

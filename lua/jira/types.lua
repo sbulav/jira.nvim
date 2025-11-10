@@ -1,6 +1,5 @@
 ---@class jira.CliConfig
 ---@field cmd string Path to jira CLI binary
----@field base_url? string JIRA instance base URL (auto-detected if nil)
 
 ---@class jira.QueryConfig
 ---@field columns string[] Columns to display

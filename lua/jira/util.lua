@@ -18,30 +18,4 @@ function M.validate_config(config)
   return true
 end
 
----Get JIRA instance base URL from config or environment
----@return string url
-function M.get_jira_base_url()
-  local config = require("jira.config").options
-
-  -- Check config first
-  if config.cli.base_url then
-    return config.cli.base_url
-  end
-
-  -- Check environment variable
-  local env_url = vim.env.JIRA_BASE_URL or vim.env.JIRA_URL
-  if env_url then
-    return env_url
-  end
-
-  -- Try to extract from jira CLI config
-  local result = vim.system({ config.cli.cmd, "config", "get", "server" }, { text = true }):wait()
-  if result.code == 0 and result.stdout then
-    return vim.trim(result.stdout)
-  end
-
-  -- Fallback
-  return "https://your-jira-instance.atlassian.net"
-end
-
 return M
