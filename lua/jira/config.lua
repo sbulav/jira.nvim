@@ -42,9 +42,15 @@ M.defaults = {
   },
 
   keymaps = {
-    open_browser = "<cr>",
-    copy_key = "y",
-    transition = "gt",
+    input = {
+      copy_key = "<M-y>",
+      transition = "<M-m>",
+    },
+    list = {
+      actions = "<CR>",
+      copy_key = "y",
+      transition = "gt",
+    },
   },
 
   debug = false,

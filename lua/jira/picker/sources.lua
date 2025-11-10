@@ -7,19 +7,27 @@ M.jira_issues = {
   preview = "jira_issue_preview",
   confirm = "jira_actions",
 
-  win = {
-    input = {
-      title = "JIRA Issues (Current Sprint)",
-    },
-    list = {
-      keys = {
-        ["<CR>"] = "jira_actions",
-        ["y"] = "jira_copy_key",
-        ["Y"] = "jira_copy_key",
-        ["gt"] = "jira_transition",
+  win = function()
+    local config = require("jira.config").options
+    local keymaps = config.keymaps
+
+    return {
+      input = {
+        title = "JIRA Issues (Current Sprint)",
+        keys = {
+          [keymaps.input.copy_key] = "jira_copy_key",
+          [keymaps.input.transition] = "jira_transition",
+        },
       },
-    },
-  },
+      list = {
+        keys = {
+          [keymaps.list.actions] = "jira_actions",
+          [keymaps.list.copy_key] = "jira_copy_key",
+          [keymaps.list.transition] = "jira_transition",
+        },
+      },
+    }
+  end,
 }
 
 M.jira_actions = {
