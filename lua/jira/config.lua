@@ -13,7 +13,7 @@ M.defaults = {
     columns = { "type", "key", "assignee", "status", "summary", "labels" },
     filters = { "-s~archive", "-s~done" },
     order_by = "status",
-    -- Prefill search prompt, e.g. add your current name
+    -- Prefill search prompt, e.g. add your name to pre-filter your assigned issues
     prefill_search = "",
   },
 
@@ -42,6 +42,11 @@ M.defaults = {
     epic_issues = { preset = "vertical" },
     epics = { preset = "select", layout = { max_width = 120 } },
     actions = { preset = "select", layout = { max_width = 60 } },
+  },
+
+  -- Preview configuration
+  preview = {
+    nb_comments = 10,
   },
 
   ui = {
@@ -86,8 +91,6 @@ M.defaults = {
       description = "", -- Action description text
       fallback = "", -- Used when action format doesn't match expected pattern
     },
-    -- Number of comments to display in issue preview
-    preview_comments = 10,
   },
 
   keymaps = {

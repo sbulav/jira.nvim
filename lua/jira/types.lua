@@ -14,7 +14,9 @@
 ---@field status_highlights table<string, string> Highlight groups for statuses
 ---@field issue_highlights table<string, string> Highlight groups for issue fields (key, assignee, summary, labels)
 ---@field action_highlights table<string, string> Highlight groups for action dialog (icon, number, description, fallback)
----@field preview_comments number Number of comments to show in preview (default: 0)
+
+---@class jira.PreviewConfig
+---@field nb_comments number Number of comments to show in preview
 
 ---@class jira.Keymaps
 ---@field input table<string, string|snacks.win.Keys> Keymaps for input window
@@ -34,5 +36,6 @@
 ---@field epic_issues jira.QueryConfig Epic issues query settings
 ---@field ui jira.UIConfig UI settings
 ---@field layout jira.LayoutConfig Layout settings
+---@field preview jira.PreviewConfig Preview settings
 ---@field keymaps jira.Keymaps Custom keymaps
 ---@field debug boolean Enable debug mode to print CLI commands
