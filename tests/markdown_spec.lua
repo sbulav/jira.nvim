@@ -29,7 +29,7 @@ describe("markdown", function()
   -- Access private functions exposed for testing
   local strip_ansi_codes = markdown._strip_ansi_codes
   local trim_line = markdown._trim_line
-  local transform_to_markdown = markdown._transform_to_markdown
+  local transform_to_markdown = markdown._plain_to_markdown
 
   describe("strip_ansi_codes", function()
     it("should remove ANSI color codes", function()
@@ -353,6 +353,191 @@ describe("markdown", function()
         assert.is_true(vim.tbl_contains(result, "### John Doe • 2024-01-01"))
         assert.is_true(vim.tbl_contains(result, "### 🔥 Jane Smith • 2024-01-02"))
       end)
+    end)
+  end)
+
+  describe("adf_to_markdown", function()
+    local adf_to_markdown = markdown.adf_to_markdown
+
+    it("should extract text from simple text node", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Hello world" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("Hello world", result)
+    end)
+
+    it("should handle multiple text nodes in a paragraph", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Hello " },
+              { type = "text", text = "world" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("Hello world", result)
+    end)
+
+    it("should separate paragraphs with newlines", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "First paragraph" },
+            },
+          },
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Second paragraph" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("First paragraph\n\nSecond paragraph", result)
+    end)
+
+    it("should handle headings", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "heading",
+            content = {
+              { type = "text", text = "Title" },
+            },
+          },
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Content" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("Title\n\nContent", result)
+    end)
+
+    it("should handle hardBreak nodes", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Line 1" },
+              { type = "hardBreak" },
+              { type = "text", text = "Line 2" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("Line 1\nLine 2", result)
+    end)
+
+    it("should handle empty ADF document", function()
+      local adf = {
+        type = "doc",
+        content = {},
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("", result)
+    end)
+
+    it("should handle ADF without content field", function()
+      local adf = {
+        type = "doc",
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("", result)
+    end)
+
+    it("should remove consecutive newlines", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Text" },
+            },
+          },
+          { type = "paragraph", content = {} }, -- Empty paragraph
+          { type = "paragraph", content = {} }, -- Another empty
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "More text" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      -- Should have at most 2 consecutive newlines
+      assert.is_nil(result:match("\n\n\n"))
+    end)
+
+    it("should handle nested content structures", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              {
+                type = "text",
+                text = "Bold",
+                marks = { { type = "strong" } },
+              },
+              { type = "text", text = " and " },
+              {
+                type = "text",
+                text = "italic",
+                marks = { { type = "em" } },
+              },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      assert.are.equal("Bold and italic", result)
+    end)
+
+    it("should trim leading and trailing newlines", function()
+      local adf = {
+        type = "doc",
+        content = {
+          {
+            type = "paragraph",
+            content = {
+              { type = "text", text = "Content" },
+            },
+          },
+        },
+      }
+      local result = adf_to_markdown(adf)
+      -- Should not start or end with newlines
+      assert.is_nil(result:match("^\n"))
+      assert.is_nil(result:match("\n$"))
     end)
   end)
 end)

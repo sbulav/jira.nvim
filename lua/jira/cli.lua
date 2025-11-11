@@ -197,53 +197,6 @@ local function edit_issue_title(key, summary, opts)
   execute(_build_issue_edit_summary_args(key, summary), opts)
 end
 
----Extract plain text from ADF (Atlassian Document Format)
----@param adf table ADF document structure
----@return string Plain text content
-local function extract_text_from_adf(adf)
-  local lines = {}
-
-  local function extract_from_node(node)
-    if not node then
-      return
-    end
-
-    -- Handle text nodes
-    if node.type == "text" and node.text then
-      table.insert(lines, node.text)
-    end
-
-    -- Handle inline nodes with content
-    if node.content then
-      for _, child in ipairs(node.content) do
-        extract_from_node(child)
-      end
-    end
-
-    -- Add newlines for block-level elements
-    if node.type == "paragraph" or node.type == "heading" then
-      table.insert(lines, "\n")
-    elseif node.type == "hardBreak" then
-      table.insert(lines, "\n")
-    end
-  end
-
-  -- Start extraction from document root
-  if adf.content then
-    for _, node in ipairs(adf.content) do
-      extract_from_node(node)
-    end
-  end
-
-  -- Join and clean up multiple consecutive newlines
-  local text = table.concat(lines, "")
-  text = text:gsub("\n\n+", "\n\n") -- Replace 3+ newlines with 2
-  text = text:gsub("^\n+", "") -- Remove leading newlines
-  text = text:gsub("\n+$", "") -- Remove trailing newlines
-
-  return text
-end
-
 ---Get issue description
 ---@param key string Issue key
 ---@param callback fun(description: string?) Callback with description or nil on error
@@ -271,7 +224,8 @@ local function get_issue_description(key, callback)
       -- Handle ADF (Atlassian Document Format) - description is a table
       if type(description) == "table" then
         -- Extract plain text from ADF for editing
-        description = extract_text_from_adf(description)
+        local markdown = require("jira.markdown")
+        description = markdown.adf_to_markdown(description)
       elseif type(description) ~= "string" then
         description = ""
       end

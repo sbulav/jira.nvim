@@ -146,7 +146,7 @@ end
 ---Transform plain text output to markdown format
 ---@param lines string[]
 ---@return string[]
-local function transform_to_markdown(lines)
+local function plain_to_markdown(lines)
   local result = {}
   local in_code_block = false
   local metadata_lines = {}
@@ -280,6 +280,53 @@ local function transform_to_markdown(lines)
   return result
 end
 
+---Convert ADF (Atlassian Document Format) to plain text
+---@param adf table ADF document structure
+---@return string Plain text content
+local function adf_to_markdown(adf)
+  local lines = {}
+
+  local function extract_from_node(node)
+    if not node then
+      return
+    end
+
+    -- Handle text nodes
+    if node.type == "text" and node.text then
+      table.insert(lines, node.text)
+    end
+
+    -- Handle inline nodes with content
+    if node.content then
+      for _, child in ipairs(node.content) do
+        extract_from_node(child)
+      end
+    end
+
+    -- Add newlines for block-level elements
+    if node.type == "paragraph" or node.type == "heading" then
+      table.insert(lines, "\n\n")
+    elseif node.type == "hardBreak" then
+      table.insert(lines, "\n")
+    end
+  end
+
+  -- Start extraction from document root
+  if adf.content then
+    for _, node in ipairs(adf.content) do
+      extract_from_node(node)
+    end
+  end
+
+  -- Join and clean up multiple consecutive newlines
+  local text = table.concat(lines, "")
+  text = text:gsub("\n\n+", "\n\n") -- Replace 3+ newlines with 2
+  text = text:gsub("^\n+", "") -- Remove leading newlines
+  text = text:gsub("\n+$", "") -- Remove trailing newlines
+
+  return text
+end
+
 ---Convert JIRA issue plain text to markdown
 ---@param text string Plain text with ANSI codes
 ---@return string[] Markdown formatted lines
@@ -289,7 +336,7 @@ local function format_issue(text)
   local lines = vim.split(clean_text, "\n", { trimempty = false })
 
   -- Transform to markdown
-  return transform_to_markdown(lines)
+  return plain_to_markdown(lines)
 end
 
 local M = {}
@@ -300,6 +347,7 @@ M._format_linked_issue_line = format_linked_issue_line
 M._format_comment_author = format_comment_author
 M._format_section_header = format_section_header
 M._process_header = process_header
-M._transform_to_markdown = transform_to_markdown
+M._plain_to_markdown = plain_to_markdown
+M.adf_to_markdown = adf_to_markdown
 M.format_issue = format_issue
 return M
