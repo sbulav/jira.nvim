@@ -11,21 +11,20 @@ end
 
 --- Open issues picker
 ---@param opts table? Picker options
-local function issues(opts)
+local function open_jira_issues(opts)
   if not package.loaded["snacks"] then
     vim.notify("jira.nvim requires snacks.nvim", vim.log.levels.ERROR)
     return
   end
 
-  -- Register picker if not already done
   if not package.loaded["jira.picker"] then
     require("jira.picker").register()
   end
 
-  return require("snacks").picker("jira_issues", opts)
+  return require("snacks").picker("source_jira_issues", opts)
 end
 
 local M = {}
 M.setup = setup
-M.issues = issues
+M.open_jira_issues = open_jira_issues
 return M

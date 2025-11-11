@@ -42,7 +42,7 @@ end
 
 ---Builds the configuration for the JIRA issues picker.
 ---@return snacks.picker.source The configuration for the JIRA issues picker
-local function build_jira_issues()
+local function source_jira_issues()
   local config = require("jira.config").options
   local keymaps = config.keymaps
 
@@ -68,13 +68,19 @@ local function build_jira_issues()
   }
 end
 
+---Builds the configuration for the JIRA actions picker.
+---@return snacks.picker.source The configuration for the JIRA actions picker
+local function source_jira_actions()
+  return {
+    layout = { preset = "select", layout = { max_width = 60 } },
+    title = "  Actions",
+    main = { current = true },
+    finder = get_actions,
+    format = "format_jira_action",
+  }
+end
+
 local M = {}
-M.jira_issues = build_jira_issues()
-M.source_jira_actions = {
-  layout = { preset = "select", layout = { max_width = 60 } },
-  title = "  Actions",
-  main = { current = true },
-  finder = get_actions,
-  format = "format_jira_action",
-}
+M.source_jira_issues = source_jira_issues()
+M.source_jira_actions = source_jira_actions()
 return M
