@@ -6,7 +6,6 @@
 ---@field columns string[] Columns to display
 ---@field filters string[] Default filters for sprint list
 ---@field order_by string Sort order field
----@field paginate string Pagination format (e.g., "0:100")
 
 ---@class jira.DisplayConfig
 ---@field type_icons table<string, string> Icons for issue types

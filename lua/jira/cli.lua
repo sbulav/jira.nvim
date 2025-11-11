@@ -23,10 +23,6 @@ local function _build_sprint_list_args()
   local order_by = config.query.order_by
   vim.list_extend(args, { "--order-by", order_by })
 
-  -- Add pagination
-  local paginate = config.query.paginate
-  vim.list_extend(args, { "--paginate", paginate })
-
   -- Add format
   local columns = config.query.columns
   vim.list_extend(args, { "--csv", "--columns", table.concat(columns, ",") })
