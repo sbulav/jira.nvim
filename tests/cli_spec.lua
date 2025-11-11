@@ -34,6 +34,18 @@ if not _G.vim then
       -- Execute immediately in tests
       fn()
     end,
+    validate = function(spec)
+      -- Simple validation for tests
+      for name, def in pairs(spec) do
+        local value, expected_type, optional = def[1], def[2], def[3]
+        if not optional and value == nil then
+          error(string.format("%s: expected %s, got nil", name, expected_type))
+        end
+        if value ~= nil and type(value) ~= expected_type then
+          error(string.format("%s: expected %s, got %s", name, expected_type, type(value)))
+        end
+      end
+    end,
     log = {
       levels = {
         INFO = 1,

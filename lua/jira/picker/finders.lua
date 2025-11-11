@@ -1,4 +1,6 @@
 ---Simple CSV parser for quoted fields
+---NOTE: This parser does not handle escaped quotes within fields (e.g., "value with \"quote\"")
+---It's sufficient for JIRA CLI CSV output but not a general-purpose CSV parser
 ---@param line string
 ---@return string[]
 local function parse_csv_line(line)
@@ -53,11 +55,11 @@ local function get_jira_issues(opts, ctx)
 
         -- Map values to column names and fix JIRA CLI CSV escaping bug
         local issue = {}
-        for i, col in ipairs(columns) do
+        for i = 1, #columns do
           local value = values[i] or ""
           -- Fix JIRA CLI bug: [text[] should be [text]
           value = value:gsub("%[([^%]]+)%[%]", "[%1]")
-          issue[col] = value
+          issue[columns[i]] = value
         end
 
         -- Return picker item

@@ -21,39 +21,36 @@ local function format_jira_issues(item, picker)
   local type_highlights = config.display.type_highlights
   local type_hl = type_highlights[item.type] or "Comment"
 
-  ret[#ret + 1] = { icon .. " ", type_hl }
+  table.insert(ret, { icon .. " ", type_hl })
 
   -- Issue key (compact)
-  ret[#ret + 1] = { pad_to_width(item.key or "", 10), "Special" }
-  ret[#ret + 1] = { " " }
+  table.insert(ret, { pad_to_width(item.key or "", 10), "Special" })
+  table.insert(ret, { " " })
 
   -- Assignee (compact)
-  local assignee = item.assignee or "Unassigned"
-  if assignee == "" then
-    assignee = "Unassigned"
-  end
-  ret[#ret + 1] = { pad_to_width(assignee, 18), "Identifier" }
-  ret[#ret + 1] = { " " }
+  local assignee = (item.assignee and item.assignee ~= "") and item.assignee or "Unassigned"
+  table.insert(ret, { pad_to_width(assignee, 18), "Identifier" })
+  table.insert(ret, { " " })
 
   -- Status badge (compact)
   local status = item.status or "Unknown"
   local status_highlights = config.display.status_highlights
   local status_hl = status_highlights[status] or "Comment"
-  ret[#ret + 1] = { pad_to_width(status, 22), status_hl }
-  ret[#ret + 1] = { " " }
+  table.insert(ret, { pad_to_width(status, 22), status_hl })
+  table.insert(ret, { " " })
 
   -- Summary (main text) - no width constraint
-  ret[#ret + 1] = { item.summary or "", "Normal" }
+  table.insert(ret, { item.summary or "", "Normal" })
 
   -- Labels (if present, more compact)
   if item.labels and item.labels ~= "" then
-    ret[#ret + 1] = { " ", "Comment" }
+    table.insert(ret, { " ", "Comment" })
     local labels = vim.split(item.labels, ",")
-    for i, label in ipairs(labels) do
+    for i = 1, #labels do
       if i > 1 then
-        ret[#ret + 1] = { " ", "Comment" }
+        table.insert(ret, { " ", "Comment" })
       end
-      ret[#ret + 1] = { "#" .. label, "Comment" }
+      table.insert(ret, { "#" .. labels[i], "Comment" })
     end
   end
 
@@ -71,17 +68,13 @@ local function format_jira_action(item, picker)
   local icon, num, rest = item.text:match("^([^%s]+)%s+(%d+%.%s)(.*)$")
 
   if icon and num and rest then
-    -- Icon with two spaces
-    ret[#ret + 1] = { icon .. "  ", "Special" }
-
-    -- Number
-    ret[#ret + 1] = { num, "Number" }
-
+    table.insert(ret, { icon .. "  ", "Special" })
+    table.insert(ret, { num, "Number" })
     -- Description (no highlight group = use default picker text highlight)
-    ret[#ret + 1] = { rest }
+    table.insert(ret, { rest })
   else
     -- Fallback if format doesn't match
-    ret[#ret + 1] = { item.text, "Normal" }
+    table.insert(ret, { item.text, "Normal" })
   end
 
   return ret

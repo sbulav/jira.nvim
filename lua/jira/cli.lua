@@ -1,33 +1,28 @@
 ---Jira CLI execution and command building
 ---Centralizes debug logging, error handling, and command argument construction
 
+local UNASSIGN_USER = "x" -- Special value used by jira-cli to unassign
+
+--
+-- BUILD ARGUMENT FUNCTIONS
+--
+
 ---Build arguments for sprint list query
 ---@return table args command arguments for jira CLI
 local function _build_sprint_list_args()
   local util = require("jira.util")
   local config = require("jira.config").options
 
-  -- Check if jira CLI is available
   if not util.has_jira_cli() then
     error("JIRA CLI not found. Please install: https://github.com/ankitpokhrel/jira-cli")
   end
 
-  -- Build command arguments
   local args = vim.deepcopy(config.query.args)
 
-  -- Add filters
-  local filters = config.query.filters
-  vim.list_extend(args, filters)
+  vim.list_extend(args, config.query.filters)
+  vim.list_extend(args, { "--order-by", config.query.order_by })
+  vim.list_extend(args, { "--csv", "--columns", table.concat(config.query.columns, ",") })
 
-  -- Add order
-  local order_by = config.query.order_by
-  vim.list_extend(args, { "--order-by", order_by })
-
-  -- Add format
-  local columns = config.query.columns
-  vim.list_extend(args, { "--csv", "--columns", table.concat(columns, ",") })
-
-  -- Debug: print command
   if config.debug then
     local cmd_str = config.cli.cmd .. " " .. table.concat(args, " ")
     vim.notify("JIRA CLI Command:\n" .. cmd_str, vim.log.levels.INFO)
@@ -51,10 +46,17 @@ end
 
 ---Build arguments for transitioning an issue
 ---@param key string Issue key
----@param transition string Transition name (if nil, returns args for listing transitions)
+---@param transition string Transition name
 ---@return table args command arguments
-local function _build_issue_move_args(key, transition)
-  return { "issue", "move", key, transition }
+local function _build_issue_transition_args(key, transition)
+  return { "issue", "transition", key, transition }
+end
+
+---Build arguments for listing available transitions (interactive prompt)
+---@param key string Issue key
+---@return table args command arguments
+local function _build_issue_list_transitions_args(key)
+  return { "issue", "transition", key }
 end
 
 ---Build arguments for assigning an issue to a user
@@ -69,7 +71,7 @@ end
 ---@param key string Issue key
 ---@return table args command arguments
 local function _build_issue_unassign_args(key)
-  return { "issue", "assign", key, "x" }
+  return { "issue", "assign", key, UNASSIGN_USER }
 end
 
 ---Build arguments for adding a comment to an issue
@@ -88,6 +90,32 @@ local function _build_issue_edit_summary_args(key, summary)
   return { "issue", "edit", key, "--summary", summary, "--no-input" }
 end
 
+---Build arguments for editing issue description
+---@param key string Issue key
+---@return table args command arguments
+local function _build_issue_edit_description_args(key)
+  return { "issue", "edit", key, "--no-input" }
+end
+
+---Build arguments for viewing an issue
+---@param key string Issue key
+---@param comments_count number Number of comments to include
+---@return table args command arguments
+local function _build_issue_view_args(key, comments_count)
+  return { "issue", "view", key, "--plain", "--comments", tostring(comments_count) }
+end
+
+---Build arguments for getting issue in raw format (for description)
+---@param key string Issue key
+---@return table args command arguments
+local function _build_issue_view_raw_args(key)
+  return { "issue", "view", key, "--raw" }
+end
+
+--
+-- EXECUTION FUNCTIONS
+--
+
 ---Execute a Jira CLI command asynchronously
 ---@param args table Command arguments (e.g., {"issue", "edit", key, "--summary", title})
 ---@param opts table? Options table with:
@@ -96,7 +124,13 @@ end
 ---   - success_msg: string|function(result) Success notification message
 ---   - error_msg: string|function(result) Error notification message
 ---   - progress_msg: string Optional progress notification shown before execution
+---   - stdin: string Optional stdin input for the command
 local function execute(args, opts)
+  vim.validate({
+    args = { args, "table" },
+    opts = { opts, "table", true },
+  })
+
   opts = opts or {}
 
   local config = require("jira.config").options
@@ -113,10 +147,16 @@ local function execute(args, opts)
     vim.notify(opts.progress_msg, vim.log.levels.INFO)
   end
 
+  -- Prepare system options
+  local system_opts = { text = true }
+  if opts.stdin then
+    system_opts.stdin = opts.stdin
+  end
+
   -- Execute command asynchronously
-  vim.system(cmd, { text = true }, function(result)
+  -- Note: vim.schedule() ensures UI updates happen on main loop
+  vim.system(cmd, system_opts, function(result)
     vim.schedule(function()
-      -- Handle result
       if result.code == 0 then
         -- Success notification
         if opts.success_msg then
@@ -163,7 +203,7 @@ end
 ---@param transition string Transition name
 ---@param opts table? Options for execute (success_msg, error_msg, callbacks)
 local function transition_issue(key, transition, opts)
-  execute(_build_issue_move_args(key, transition), opts)
+  execute(_build_issue_transition_args(key, transition), opts)
 end
 
 ---Assign issue to a user
@@ -201,17 +241,10 @@ end
 ---@param key string Issue key
 ---@param comments_count number Number of comments to include
 ---@param callback fun(result: table) Callback with vim.system result
-local function get_issue_view(key, comments_count, callback)
+local function view_issue(key, comments_count, callback)
   local config = require("jira.config").options
-  local cmd = {
-    config.cli.cmd,
-    "issue",
-    "view",
-    key,
-    "--plain",
-    "--comments",
-    tostring(comments_count),
-  }
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, _build_issue_view_args(key, comments_count))
 
   -- Execute command asynchronously
   vim.system(cmd, { text = true }, function(result)
@@ -224,11 +257,11 @@ end
 ---Get issue description
 ---@param key string Issue key
 ---@param callback fun(description: string?) Callback with description or nil on error
-local function get_issue_description(key, callback)
+local function view_issue_description(key, callback)
   local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "issue", "view", key, "--raw" }
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, _build_issue_view_raw_args(key))
 
-  -- Execute command asynchronously
   vim.system(cmd, { text = true }, function(result)
     vim.schedule(function()
       if result.code ~= 0 then
@@ -265,49 +298,8 @@ end
 ---@param opts table? Options table with callbacks and messages
 local function edit_issue_description(key, description, opts)
   opts = opts or {}
-
-  local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "issue", "edit", key, "--no-input" }
-
-  -- Debug logging
-  if config.debug then
-    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-  end
-
-  -- Show progress notification
-  if opts.progress_msg then
-    vim.notify(opts.progress_msg, vim.log.levels.INFO)
-  end
-
-  -- Execute command with stdin for multi-line description
-  vim.system(cmd, { stdin = description, text = true }, function(result)
-    vim.schedule(function()
-      if result.code == 0 then
-        -- Success notification
-        if opts.success_msg then
-          local msg = type(opts.success_msg) == "function" and opts.success_msg(result) or opts.success_msg
-          vim.notify(msg, vim.log.levels.INFO)
-        end
-
-        -- Success callback
-        if opts.on_success then
-          opts.on_success(result)
-        end
-      else
-        -- Error notification
-        if opts.error_msg then
-          local msg = type(opts.error_msg) == "function" and opts.error_msg(result) or opts.error_msg
-          local error_detail = result.stderr or "Unknown error"
-          vim.notify(string.format("%s: %s", msg, error_detail), vim.log.levels.ERROR)
-        end
-
-        -- Error callback
-        if opts.on_error then
-          opts.on_error(result)
-        end
-      end
-    end)
-  end)
+  opts.stdin = description
+  execute(_build_issue_edit_description_args(key), opts)
 end
 
 ---Get available transitions for an issue
@@ -320,7 +312,9 @@ local function get_transitions(issue_key, callback)
   -- so we scrape the interactive prompt output by spawning the command,
   -- capturing stdout, then killing it before it waits for user input
   local stdout_chunks = {}
-  local job_id = vim.fn.jobstart({ config.cli.cmd, "issue", "move", issue_key }, {
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, _build_issue_list_transitions_args(issue_key))
+  local job_id = vim.fn.jobstart(cmd, {
     stdout_buffered = false,
     on_stdout = function(_, data, _)
       for _, line in ipairs(data) do
@@ -383,8 +377,8 @@ M.assign_issue = assign_issue
 M.unassign_issue = unassign_issue
 M.comment_issue = comment_issue
 M.edit_issue_title = edit_issue_title
-M.get_issue_view = get_issue_view
-M.get_issue_description = get_issue_description
+M.view_issue = view_issue
+M.view_issue_description = view_issue_description
 M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions
 return M

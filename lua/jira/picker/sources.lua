@@ -27,7 +27,8 @@ local function get_actions(opts, ctx)
 
   ---@async
   return function(cb)
-    for i, it in ipairs(items) do
+    for i = 1, #items do
+      local it = items[i]
       -- Extract icon from the beginning of text (emoji followed by space)
       local icon, rest = it.text:match("^([^%s]+)%s(.+)$")
       if icon and rest then

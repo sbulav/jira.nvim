@@ -1,12 +1,25 @@
 local cli = require("jira.cli")
 
+local CLIPBOARD_REG = "+"
+local DEFAULT_REG = '"'
+
+---Validates that item has a key
+---@param item snacks.picker.Item
+---@return boolean valid True if item has key, false otherwise
+local function validate_item_key(item)
+  if not item.key then
+    vim.notify("No issue key available", vim.log.levels.WARN)
+    return false
+  end
+  return true
+end
+
 ---Open issue in browser
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_open_browser(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -21,13 +34,12 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_copy_key(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
-  vim.fn.setreg("+", item.key)
-  vim.fn.setreg('"', item.key)
+  vim.fn.setreg(CLIPBOARD_REG, item.key)
+  vim.fn.setreg(DEFAULT_REG, item.key)
 
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
@@ -37,8 +49,7 @@ end
 ---@param item snacks.picker.Item
 ---@param _ snacks.picker.Action
 local function action_jira_transition(picker, item, _)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -77,8 +88,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_assign_me(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -87,7 +97,7 @@ local function action_jira_assign_me(picker, item, action)
     progress_msg = "Getting current user...",
     error_msg = "Failed to get current user",
     on_success = function(result)
-      local me = vim.trim(result.stdout)
+      local me = vim.trim(result.stdout or "")
       cli.assign_issue(item.key, me, {
         progress_msg = string.format("Assigning %s...", item.key),
         success_msg = string.format("Assigned %s to you", item.key),
@@ -105,8 +115,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_unassign(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -145,8 +154,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_add_comment(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -183,8 +191,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_edit_title(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -233,8 +240,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_edit_description(picker, item, action)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
+  if not validate_item_key(item) then
     return
   end
 
@@ -242,7 +248,7 @@ local function action_jira_edit_description(picker, item, action)
   vim.notify(string.format("Fetching description for %s...", item.key), vim.log.levels.INFO)
 
   -- Fetch current description
-  cli.get_issue_description(item.key, function(description)
+  cli.view_issue_description(item.key, function(description)
     if not description then
       vim.notify(string.format("Failed to fetch description for %s", item.key), vim.log.levels.ERROR)
       return
@@ -348,8 +354,7 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_list_actions(picker, item, action)
-  local Snacks = require("snacks")
-  Snacks.picker.source_jira_actions({
+  require("snacks").picker("source_jira_actions", {
     item = item,
     confirm = function(action_picker, action_item, selected_action)
       if not action_item then
