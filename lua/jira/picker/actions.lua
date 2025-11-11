@@ -224,6 +224,38 @@ local function action_jira_unassign(picker, item, action)
   end
 end
 
+--- Submit comment from scratch buffer
+---@param issue_key string
+---@param win snacks.win
+local function submit_comment(issue_key, win)
+  local comment = win:text()
+
+  -- Validate non-empty comment
+  if not comment or comment:match("^%s*$") then
+    vim.notify("Comment cannot be empty", vim.log.levels.WARN)
+    return
+  end
+
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd, "issue", "comment", "add", issue_key, comment }
+
+  if config.debug then
+    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
+  end
+
+  local result = vim.system(cmd, { text = true }):wait()
+
+  if result.code == 0 then
+    vim.notify(string.format("Added comment to %s", issue_key), vim.log.levels.INFO)
+    win:close()
+  else
+    vim.notify(
+      string.format("Failed to comment on %s: %s", issue_key, result.stderr or "Unknown error"),
+      vim.log.levels.ERROR
+    )
+  end
+end
+
 --- Add comment to issue
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
@@ -234,29 +266,37 @@ local function action_jira_comment(picker, item, action)
     return
   end
 
-  vim.ui.input({ prompt = "Comment: " }, function(comment)
-    if not comment or comment == "" then
-      return
-    end
+  local issue_key = item.key
+  local parent = picker.win and picker.win.win or vim.api.nvim_get_current_win()
 
-    local config = require("jira.config").options
-    local cmd = { config.cli.cmd, "issue", "comment", "add", item.key, comment }
-
-    if config.debug then
-      vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-    end
-
-    local result = vim.system(cmd, { text = true }):wait()
-
-    if result.code == 0 then
-      vim.notify(string.format("Added comment to %s", item.key), vim.log.levels.INFO)
-    else
-      vim.notify(
-        string.format("Failed to comment on %s: %s", item.key, result.stderr or "Unknown error"),
-        vim.log.levels.ERROR
-      )
-    end
-  end)
+  Snacks.scratch({
+    ft = "markdown",
+    name = string.format("Comment on %s", issue_key),
+    template = "",
+    win = {
+      relative = "editor",
+      width = 80,
+      height = 15,
+      title = string.format(" Add Comment to %s ", issue_key),
+      title_pos = "center",
+      border = "rounded",
+      keys = {
+        submit = {
+          "<c-s>",
+          function(win)
+            submit_comment(issue_key, win)
+          end,
+          desc = "Submit comment",
+          mode = { "n", "i" },
+        },
+      },
+      on_win = function()
+        vim.schedule(function()
+          vim.cmd.startinsert()
+        end)
+      end,
+    },
+  })
 end
 
 --- Define all actions with metadata

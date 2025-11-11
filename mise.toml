@@ -1,3 +1,15 @@
 [tasks.test]
 description = "Run busted tests"
 run = "LUA_PATH='lua/?.lua;lua/?/init.lua;;' busted tests/"
+
+[tasks."test:watch"]
+description = "Run busted tests in watch mode"
+run = "LUA_PATH='lua/?.lua;lua/?/init.lua;;' busted --watch tests/"
+
+[tasks."test:verbose"]
+description = "Run busted tests with verbose output"
+run = "LUA_PATH='lua/?.lua;lua/?/init.lua;;' busted --verbose tests/"
+
+[tasks.check]
+description = "Check Lua syntax for all files"
+run = "find lua -name '*.lua' -exec luac -p {} \\;"
