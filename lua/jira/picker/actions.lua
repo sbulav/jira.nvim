@@ -304,42 +304,42 @@ end
 local function get_jira_actions(item, ctx)
   return {
     open_browser = {
-      name = "Open in browser",
+      name = "Open issue in browser",
       icon = " ",
       priority = 100,
       action = action_jira_open_browser,
     },
 
     copy_key = {
-      name = "Copy key to clipboard",
+      name = "Copy issue key to clipboard",
       icon = " ",
       priority = 90,
       action = action_jira_copy_key,
     },
 
     transition = {
-      name = "Edit status",
+      name = "Edit status / Move issue",
       icon = " ",
       priority = 80,
       action = action_jira_transition,
     },
 
     assign_me = {
-      name = "Assign to me",
+      name = "Assign issue to me",
       icon = " ",
       priority = 70,
       action = action_jira_assign_me,
     },
 
     unassign = {
-      name = "Unassign",
+      name = "Unassign issue",
       icon = " ",
       priority = 60,
       action = action_jira_unassign,
     },
 
     comment = {
-      name = "Add comment",
+      name = "Add comment to issue",
       icon = " ",
       priority = 50,
       action = action_jira_add_comment,
