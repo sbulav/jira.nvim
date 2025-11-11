@@ -49,6 +49,7 @@ local function source_jira_issues()
 
   return {
     title = "JIRA Issues",
+    layout = config.layout.issues,
     finder = require("jira.picker.finders").get_jira_issues,
     format = "format_jira_issues",
     preview = "preview_jira_issue",
@@ -79,6 +80,7 @@ local function source_jira_epic_issues(epic_key)
 
   return {
     title = "JIRA Epic Issues",
+    layout = config.layout.epic_issues,
     finder = function(opts, ctx)
       return require("jira.picker.finders").get_jira_epic_issues(epic_key, opts, ctx)
     end,
@@ -109,7 +111,7 @@ local function source_jira_epics()
   local finders = require("jira.picker.finders")
 
   return {
-    layout = { preset = "select", layout = { max_width = 80 } },
+    layout = config.layout.epics,
     title = "JIRA Epics",
     main = { current = true },
     finder = finders.get_jira_epics,
@@ -129,8 +131,10 @@ end
 ---Builds the configuration for the JIRA actions picker.
 ---@return snacks.picker.source The configuration for the JIRA actions picker
 local function source_jira_actions()
+  local config = require("jira.config").options
+
   return {
-    layout = { preset = "select", layout = { max_width = 60 } },
+    layout = config.layout.actions,
     title = "  Actions",
     main = { current = true },
     finder = get_actions,

@@ -21,11 +21,18 @@
 ---@field list table<string, string|snacks.win.Keys> Keymaps for list window
 ---@field preview table<string, string|snacks.win.Keys> Keymaps for preview window
 
+---@class jira.LayoutConfig
+---@field issues table Layout configuration for issues picker
+---@field epic_issues table Layout configuration for epic issues picker
+---@field epics table Layout configuration for epics picker
+---@field actions table Layout configuration for actions picker
+
 ---@class jira.Config
 ---@field cli jira.CliConfig CLI settings
 ---@field query jira.QueryConfig Query settings
 ---@field epic jira.QueryConfig Epic query settings
 ---@field epic_issues jira.QueryConfig Epic issues query settings
 ---@field display jira.DisplayConfig Display settings
+---@field layout jira.LayoutConfig Layout settings
 ---@field keymaps jira.Keymaps Custom keymaps
 ---@field debug boolean Enable debug mode to print CLI commands

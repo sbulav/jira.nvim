@@ -35,6 +35,15 @@ M.defaults = {
     prefill_search = "",
   },
 
+  -- Layout configuration for pickers
+  -- Use `:help snacks.nvim-picker-layouts` for more customization
+  layout = {
+    issues = { preset = "vertical" },
+    epic_issues = { preset = "vertical" },
+    epics = { preset = "select", layout = { max_width = 120 } },
+    actions = { preset = "select", layout = { max_width = 60 } },
+  },
+
   display = {
     -- Icons displayed for each issue type
     type_icons = {
