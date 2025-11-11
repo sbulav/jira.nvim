@@ -1,7 +1,5 @@
-local M = {}
-
 ---@type jira.Config
-M.defaults = {
+local defaults = {
   cli = {
     -- Cmd to invoke the Jira CLI tool
     cmd = "jira",
@@ -130,6 +128,8 @@ M.defaults = {
   debug = false,
 }
 
+local M = {}
+
 ---@type jira.Config
 ---@diagnostic disable-next-line: missing-fields
 M.options = {}
@@ -137,7 +137,7 @@ M.options = {}
 ---Setup configuration with user options
 ---@param opts jira.Config?
 function M.setup(opts)
-  M.options = vim.tbl_deep_extend("force", {}, M.defaults, opts or {})
+  M.options = vim.tbl_deep_extend("force", {}, defaults, opts or {})
 end
 
 return M
