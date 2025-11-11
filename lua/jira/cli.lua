@@ -197,6 +197,141 @@ local function edit_issue_title(key, summary, opts)
   execute(_build_issue_edit_summary_args(key, summary), opts)
 end
 
+---Extract plain text from ADF (Atlassian Document Format)
+---@param adf table ADF document structure
+---@return string Plain text content
+local function extract_text_from_adf(adf)
+  local lines = {}
+
+  local function extract_from_node(node)
+    if not node then
+      return
+    end
+
+    -- Handle text nodes
+    if node.type == "text" and node.text then
+      table.insert(lines, node.text)
+    end
+
+    -- Handle inline nodes with content
+    if node.content then
+      for _, child in ipairs(node.content) do
+        extract_from_node(child)
+      end
+    end
+
+    -- Add newlines for block-level elements
+    if node.type == "paragraph" or node.type == "heading" then
+      table.insert(lines, "\n")
+    elseif node.type == "hardBreak" then
+      table.insert(lines, "\n")
+    end
+  end
+
+  -- Start extraction from document root
+  if adf.content then
+    for _, node in ipairs(adf.content) do
+      extract_from_node(node)
+    end
+  end
+
+  -- Join and clean up multiple consecutive newlines
+  local text = table.concat(lines, "")
+  text = text:gsub("\n\n+", "\n\n") -- Replace 3+ newlines with 2
+  text = text:gsub("^\n+", "") -- Remove leading newlines
+  text = text:gsub("\n+$", "") -- Remove trailing newlines
+
+  return text
+end
+
+---Get issue description
+---@param key string Issue key
+---@param callback fun(description: string?) Callback with description or nil on error
+local function get_issue_description(key, callback)
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd, "issue", "view", key, "--raw" }
+
+  -- Execute command asynchronously
+  vim.system(cmd, { text = true }, function(result)
+    vim.schedule(function()
+      if result.code ~= 0 then
+        callback(nil)
+        return
+      end
+
+      -- Parse JSON to extract description
+      local ok, data = pcall(vim.json.decode, result.stdout)
+      if not ok or not data or not data.fields then
+        callback(nil)
+        return
+      end
+
+      local description = data.fields.description
+
+      -- Handle ADF (Atlassian Document Format) - description is a table
+      if type(description) == "table" then
+        -- Extract plain text from ADF for editing
+        description = extract_text_from_adf(description)
+      elseif type(description) ~= "string" then
+        description = ""
+      end
+
+      callback(description or "")
+    end)
+  end)
+end
+
+---Edit issue description
+---@param key string Issue key
+---@param description string New description
+---@param opts table? Options table with callbacks and messages
+local function edit_issue_description(key, description, opts)
+  opts = opts or {}
+
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd, "issue", "edit", key, "--no-input" }
+
+  -- Debug logging
+  if config.debug then
+    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
+  end
+
+  -- Show progress notification
+  if opts.progress_msg then
+    vim.notify(opts.progress_msg, vim.log.levels.INFO)
+  end
+
+  -- Execute command with stdin for multi-line description
+  vim.system(cmd, { stdin = description, text = true }, function(result)
+    vim.schedule(function()
+      if result.code == 0 then
+        -- Success notification
+        if opts.success_msg then
+          local msg = type(opts.success_msg) == "function" and opts.success_msg(result) or opts.success_msg
+          vim.notify(msg, vim.log.levels.INFO)
+        end
+
+        -- Success callback
+        if opts.on_success then
+          opts.on_success(result)
+        end
+      else
+        -- Error notification
+        if opts.error_msg then
+          local msg = type(opts.error_msg) == "function" and opts.error_msg(result) or opts.error_msg
+          local error_detail = result.stderr or "Unknown error"
+          vim.notify(string.format("%s: %s", msg, error_detail), vim.log.levels.ERROR)
+        end
+
+        -- Error callback
+        if opts.on_error then
+          opts.on_error(result)
+        end
+      end
+    end)
+  end)
+end
+
 ---Get available transitions for an issue
 ---@param issue_key string
 ---@param callback fun(transitions: string[]?)
@@ -270,5 +405,7 @@ M.assign_issue = assign_issue
 M.unassign_issue = unassign_issue
 M.comment_issue = comment_issue
 M.edit_issue_title = edit_issue_title
+M.get_issue_description = get_issue_description
+M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions
 return M

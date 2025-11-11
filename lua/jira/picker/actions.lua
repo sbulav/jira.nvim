@@ -210,6 +210,80 @@ local function action_jira_edit_title(picker, item, action)
   end)
 end
 
+---Submit description from scratch buffer
+---@param issue_key string
+---@param win snacks.win
+---@param picker snacks.Picker
+local function submit_description(issue_key, win, picker)
+  local description = win:text()
+
+  -- Validate non-empty description
+  if not description or description:match("^%s*$") then
+    vim.notify("Description cannot be empty", vim.log.levels.WARN)
+    return
+  end
+
+  cli.edit_issue_description(issue_key, description, {
+    progress_msg = string.format("Updating description for %s...", issue_key),
+    success_msg = string.format("Updated description for %s", issue_key),
+    error_msg = string.format("Failed to update description for %s", issue_key),
+    on_success = function()
+      win:close()
+      picker:refresh()
+    end,
+  })
+end
+
+---Edit issue description
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+---@param action snacks.picker.Action
+local function action_jira_edit_description(picker, item, action)
+  if not item.key then
+    vim.notify("No issue key available", vim.log.levels.WARN)
+    return
+  end
+
+  -- Show loading notification
+  vim.notify(string.format("Fetching description for %s...", item.key), vim.log.levels.INFO)
+
+  -- Fetch current description
+  cli.get_issue_description(item.key, function(description)
+    if not description then
+      vim.notify(string.format("Failed to fetch description for %s", item.key), vim.log.levels.ERROR)
+      return
+    end
+
+    -- Open scratch buffer with current description
+    Snacks.scratch({
+      ft = "markdown",
+      name = string.format("Edit Description - %s", item.key),
+      template = description,
+      win = {
+        relative = "editor",
+        width = 80,
+        height = 20,
+        title = string.format(" Edit Description for %s ", item.key),
+        title_pos = "center",
+        border = "rounded",
+        keys = {
+          submit = {
+            "<c-s>",
+            function(win) submit_description(item.key, win, picker) end,
+            desc = "Submit description",
+            mode = { "n", "i" },
+          },
+        },
+        on_win = function()
+          vim.schedule(function()
+            vim.cmd.startinsert()
+          end)
+        end,
+      },
+    })
+  end)
+end
+
 ---Define all actions with metadata
 ---Get available actions for an item
 ---@param item snacks.picker.Item
@@ -255,14 +329,21 @@ local function get_jira_actions(item, ctx)
     edit_title = {
       name = "Edit title",
       icon = "󰏫 ",
-      priority = 55,
+      priority = 50,
       action = action_jira_edit_title,
+    },
+
+    edit_description = {
+      name = "Edit description",
+      icon = " ",
+      priority = 40,
+      action = action_jira_edit_description,
     },
 
     comment = {
       name = "Add comment to issue",
       icon = " ",
-      priority = 50,
+      priority = 30,
       action = action_jira_add_comment,
     },
   }
