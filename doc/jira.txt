@@ -1,0 +1,572 @@
+*jira.txt*  Browse and manage JIRA issues in Neovim
+
+==============================================================================
+Table of Contents                                          *jira* *jira.nvim*
+
+1. Introduction .................................. |jira-introduction|
+2. Requirements .................................. |jira-requirements|
+3. Installation .................................. |jira-installation|
+4. Quick Start ................................... |jira-quickstart|
+5. Commands ...................................... |jira-commands|
+6. Configuration ................................. |jira-configuration|
+7. Keymaps ....................................... |jira-keymaps|
+8. Actions ....................................... |jira-actions|
+9. Cache Management .............................. |jira-cache|
+10. Lua API ...................................... |jira-api|
+11. Health Check ................................. |jira-health|
+12. FAQ .......................................... |jira-faq|
+13. License ...................................... |jira-license|
+
+==============================================================================
+1. Introduction                                          *jira-introduction*
+
+jira.nvim is a Neovim plugin that provides a fuzzy-finding interface for
+browsing and managing JIRA issues. It leverages snacks.nvim's picker
+framework and the JIRA CLI tool to deliver a seamless JIRA experience
+directly in your editor.
+
+This plugin was heavily inspired by the awesome snacks.nvim gh plugin
+https://github.com/folke/snacks.nvim/blob/main/docs/gh.md!
+
+Features:
+  • Fuzzy search JIRA issues and epics
+  • Rich markdown previews with syntax highlighting
+  • SQLite-based caching for fast performance
+  • Customizable UI (icons, colors, layouts)
+  • Configurable keymaps
+  • Interactive actions (transition, assign, comment, edit)
+  • Browse issues within epics
+  • Smart caching with granular invalidation
+
+==============================================================================
+2. Requirements                                          *jira-requirements*
+
+Neovim Version~
+  • Neovim >= 0.11.0
+
+Required Plugins~
+  • snacks.nvim - https://github.com/folke/snacks.nvim
+
+External Tools~
+  • jira-cli - https://github.com/ankitpokhrel/jira-cli
+    Must be installed and authenticated.
+
+Optional~
+  • render-markdown.nvim - For enhanced markdown rendering in previews
+    https://github.com/MeanderingProgrammer/render-markdown.nvim
+
+==============================================================================
+3. Installation                                          *jira-installation*
+
+Using lazy.nvim~
+>lua
+    {
+      "your-username/jira.nvim",
+      dependencies = { "folke/snacks.nvim" },
+      config = function()
+        require("jira").setup()
+      end,
+      cmd = { "JiraIssues", "JiraEpic" },
+    }
+<
+
+Using packer.nvim~
+>lua
+    use {
+      "your-username/jira.nvim",
+      requires = { "folke/snacks.nvim" },
+      config = function()
+        require("jira").setup()
+      end,
+    }
+<
+
+==============================================================================
+4. Quick Start                                            *jira-quickstart*
+
+1. Ensure jira-cli is configured:
+>bash
+    jira init
+<
+
+2. Setup the plugin:
+>lua
+    require("jira").setup()
+<
+
+3. Open the issues picker:
+>vim
+    :JiraIssues
+<
+
+4. Navigate and interact:
+   - Use fuzzy search to find issues
+   - Press <CR> to open the actions menu
+   - Press `y` to copy the issue key
+   - Press `gt` to transition the issue
+
+==============================================================================
+5. Commands                                                  *jira-commands*
+
+                                                              *:JiraIssues*
+:JiraIssues
+    Open the JIRA issues picker for the current sprint.
+
+                                                                *:JiraEpic*
+:JiraEpic [epic_key]
+    Open the JIRA epic picker. If [epic_key] is provided, opens the issues
+    picker for that specific epic instead.
+
+    Examples: >
+        :JiraEpic
+        :JiraEpic PROJ-123
+<
+
+==============================================================================
+6. Configuration                                        *jira-configuration*
+
+Setup the plugin using |require("jira").setup()|. Below is the default
+configuration:
+>lua
+    require("jira").setup({
+      cli = {
+        cmd = "jira",  -- CLI command path
+
+        issues = {
+          args = { "sprint", "list", "--current" },
+          columns = { "type", "key", "assignee", "status",
+                     "summary", "labels" },
+          filters = { "-s~archive", "-s~done" },
+          order_by = "status",
+          prefill_search = "",
+        },
+
+        epics = {
+          args = { "issue", "list", "--type", "Epic" },
+          columns = { "key", "summary", "status" },
+          filters = { "-s~done", "-s~closed", "-s~archive" },
+          order_by = "created",
+          prefill_search = "",
+        },
+
+        epic_issues = {
+          args = { "issue", "list" },
+          columns = { "type", "key", "assignee", "status",
+                     "summary", "labels" },
+          filters = { "-s~archive", "-s~done" },
+          order_by = "status",
+          prefill_search = "",
+        },
+      },
+
+      layout = {
+        issues = nil,
+        epic_issues = nil,
+        epics = { preset = "select", layout = { max_width = 120 } },
+        actions = { preset = "select", layout = { max_width = 60 } },
+      },
+
+      preview = {
+        nb_comments = 10,
+      },
+
+      ui = {
+        type_icons = {
+          Bug = "󰃤",
+          Story = "",
+          Task = "",
+          ["Sub-task"] = "",
+          Epic = "󱐋",
+          default = "󰄮",
+        },
+
+        type_highlights = {
+          Bug = "DiagnosticError",
+          Story = "DiagnosticInfo",
+          Task = "DiagnosticWarn",
+          Epic = "Special",
+        },
+
+        status_highlights = {
+          ["To Do"] = "DiagnosticHint",
+          ["In Progress"] = "DiagnosticWarn",
+          ["In Review"] = "DiagnosticInfo",
+          ["Done"] = "DiagnosticOk",
+          ["Blocked"] = "DiagnosticError",
+          ["Awaiting Information"] = "Comment",
+          ["Triage"] = "DiagnosticInfo",
+        },
+
+        issue_highlights = {
+          key = "",
+          assignee = "Identifier",
+          summary = "",
+          labels = "Comment",
+        },
+
+        action_highlights = {
+          icon = "Special",
+          number = "Number",
+          description = "",
+          fallback = "",
+        },
+      },
+
+      keymaps = {
+        input = {
+          ["<M-y>"] = { "action_jira_copy_key", mode = { "i", "n" } },
+          ["<M-t>"] = { "action_jira_transition", mode = { "i", "n" } },
+          ["<M-c>"] = { "action_jira_add_comment", mode = { "i", "n" } },
+          ["<M-r>"] = { "action_jira_refresh_cache", mode = { "i", "n" } },
+        },
+        list = {
+          ["<CR>"] = "action_jira_list_actions",
+          ["y"] = "action_jira_copy_key",
+          ["gt"] = "action_jira_transition",
+          ["gc"] = "action_jira_add_comment",
+          ["<M-r>"] = "action_jira_refresh_cache",
+        },
+        preview = {
+          ["<CR>"] = "action_jira_list_actions",
+          ["<M-y>"] = "action_jira_copy_key",
+          ["<M-t>"] = "action_jira_transition",
+          ["<M-c>"] = "action_jira_add_comment",
+        },
+      },
+
+      cache = {
+        enabled = true,
+        -- path = vim.fn.stdpath("data") .. "/jira/cache.sqlite3",
+      },
+
+      debug = false,
+    })
+<
+
+------------------------------------------------------------------------------
+CONFIGURATION OPTIONS                                  *jira-config-options*
+
+cli.cmd                                                       *jira-cli-cmd*
+    Type: `string`
+    Default: `"jira"`
+
+    Path to the jira CLI executable.
+
+cli.issues                                                 *jira-cli-issues*
+    Type: `table`
+
+    Configuration for the current sprint issues picker.
+
+    Fields:
+      • args: CLI arguments (default: {"sprint", "list", "--current"})
+      • columns: Displayed columns (default: {"type", "key", "assignee",
+                "status", "summary", "labels"})
+      • filters: JQL filters (default: {"-s~archive", "-s~done"})
+      • order_by: Sort field (default: "status")
+      • prefill_search: Pre-fill search query (default: "")
+
+cli.epics                                                   *jira-cli-epics*
+    Type: `table`
+
+    Configuration for the epics picker. Same fields as |jira-cli-issues|.
+
+cli.epic_issues                                       *jira-cli-epic-issues*
+    Type: `table`
+
+    Configuration for the epic issues picker. Same fields as
+    |jira-cli-issues|.
+
+layout                                                         *jira-layout*
+    Type: `table`
+
+    Picker layout configurations. Each key (issues, epics, epic_issues,
+    actions) can have:
+      • preset: Snacks picker preset name
+      • layout: Layout options (e.g., {max_width = 120})
+
+preview.nb_comments                                   *jira-preview-comments*
+    Type: `number`
+    Default: `10`
+
+    Number of comments to display in the preview.
+
+ui.type_icons                                           *jira-ui-type-icons*
+    Type: `table`
+
+    Icons for issue types. Keys are issue type names, values are icon strings.
+
+ui.type_highlights                                 *jira-ui-type-highlights*
+    Type: `table`
+
+    Highlight groups for issue types. Keys are issue type names, values are
+    highlight group names.
+
+ui.status_highlights                             *jira-ui-status-highlights*
+    Type: `table`
+
+    Highlight groups for issue statuses. Keys are status names, values are
+    highlight group names.
+
+ui.issue_highlights                               *jira-ui-issue-highlights*
+    Type: `table`
+
+    Highlight groups for issue fields (key, assignee, summary, labels).
+
+ui.action_highlights                             *jira-ui-action-highlights*
+    Type: `table`
+
+    Highlight groups for action items (icon, number, description, fallback).
+
+keymaps                                                       *jira-keymaps*
+    Type: `table`
+
+    Keymap configurations for input, list, and preview modes. See
+    |jira-default-keymaps| for details.
+
+cache.enabled                                           *jira-cache-enabled*
+    Type: `boolean`
+    Default: `true`
+
+    Enable SQLite caching for improved performance.
+
+cache.path                                                 *jira-cache-path*
+    Type: `string`
+    Default: `vim.fn.stdpath("data") .. "/jira/cache.sqlite3"`
+
+    Custom path for the SQLite cache file.
+
+debug                                                           *jira-debug*
+    Type: `boolean`
+    Default: `false`
+
+    Enable debug logging.
+
+------------------------------------------------------------------------------
+CUSTOMIZATION EXAMPLES                                  *jira-customization*
+
+Filter to your assigned issues:
+>lua
+    require("jira").setup({
+      cli = {
+        issues = {
+          filters = { "-s~archive", "-s~done", "--assignee", "me" },
+        },
+      },
+    })
+<
+
+Add custom keymaps:
+>lua
+    require("jira").setup({
+      keymaps = {
+        list = {
+          ["<C-b>"] = "action_jira_open_browser",
+          ["<C-a>"] = "action_jira_assign_me",
+        },
+      },
+    })
+<
+
+Customize status highlights:
+>lua
+    require("jira").setup({
+      ui = {
+        status_highlights = {
+          ["Ready for Review"] = "DiagnosticInfo",
+          ["Waiting for Deploy"] = "DiagnosticWarn",
+        },
+      },
+    })
+<
+
+Pre-fill search query:
+>lua
+    require("jira").setup({
+      cli = {
+        issues = {
+          prefill_search = "label:backend",
+        },
+      },
+    })
+<
+
+==============================================================================
+7. Keymaps                                            *jira-default-keymaps*
+
+Input Mode~
+  <M-y>         Copy issue key to clipboard
+  <M-t>         Transition issue
+  <M-c>         Add comment
+  <M-r>         Refresh cache
+
+List Mode~
+  <CR>          Show actions menu
+  y             Copy issue key to clipboard
+  gt            Transition issue
+  gc            Add comment
+  <M-r>         Refresh cache
+
+Preview Mode~
+  <CR>          Show actions menu
+  <M-y>         Copy issue key to clipboard
+  <M-t>         Transition issue
+  <M-c>         Add comment
+
+Note: All keymaps are customizable via the |jira-keymaps| configuration.
+
+==============================================================================
+8. Actions                                                    *jira-actions*
+
+When you press <CR> on an issue, the following actions are available:
+
+1. Open in browser          Open the issue in your default browser
+2. Copy key                 Yank the issue key to clipboard
+3. Transition               Change the issue status
+4. Assign to me             Assign the issue to yourself
+5. Unassign                 Remove the assignee
+6. Edit summary             Edit the issue title
+7. Edit description         Edit the issue description (markdown editor)
+8. Add comment              Add a comment (markdown editor)
+
+Action-specific keymaps are also available for quick access without opening
+the actions menu. See |jira-default-keymaps|.
+
+==============================================================================
+9. Cache Management                                            *jira-cache*
+
+jira.nvim uses SQLite to cache JIRA data for improved performance.
+
+Cache Location~
+    Default: `~/.local/share/nvim/jira/cache.sqlite3`
+    Customize via |jira-cache-path|
+
+Cached Data~
+    • Sprint issues
+    • Epic lists
+    • Issue previews
+    • Available transitions (per project)
+
+Refresh Cache~
+    Press `<M-r>` in any picker mode, or select the refresh action from the
+    actions menu.
+
+Clear Cache~
+    Delete the SQLite file:
+>bash
+    rm ~/.local/share/nvim/jira/cache.sqlite3
+<
+
+Disable Cache~
+>lua
+    require("jira").setup({
+      cache = {
+        enabled = false,
+      },
+    })
+<
+
+==============================================================================
+10. Lua API                                                      *jira-api*
+
+require("jira").setup({opts})                              *jira.setup()*
+    Setup the jira.nvim plugin with the provided configuration.
+
+    Parameters: ~
+        {opts} (table|nil) Configuration options (see |jira-configuration|)
+
+require("jira").open_jira_issues({opts})          *jira.open_jira_issues()*
+    Open the JIRA issues picker for the current sprint.
+
+    Parameters: ~
+        {opts} (table|nil) Optional picker options
+
+require("jira").open_jira_epic({opts})              *jira.open_jira_epic()*
+    Open the JIRA epic picker, or issues for a specific epic if `epic` is
+    provided.
+
+    Parameters: ~
+        {opts} (table|nil) Optional picker options
+            • epic (string|nil): Epic key (e.g., "PROJ-123")
+
+    Examples: ~
+>lua
+        -- Open epic picker
+        require("jira").open_jira_epic()
+
+        -- Open specific epic's issues
+        require("jira").open_jira_epic("PROJ-123")
+<
+
+==============================================================================
+11. Health Check                                              *jira-health*
+
+Run the health check to verify your setup:
+>vim
+    :checkhealth jira
+<
+
+The health check verifies:
+    • Neovim version (>= 0.11.0)
+    • snacks.nvim installation
+    • jira CLI availability
+    • SQLite support (if cache is enabled)
+
+==============================================================================
+12. FAQ                                                          *jira-faq*
+
+Q: How do I configure jira-cli?
+A: Run `jira init` in your terminal and follow the prompts. You'll need your
+   JIRA instance URL and API token.
+
+Q: Why are previews not rendering markdown?
+A: Install render-markdown.nvim for enhanced markdown rendering:
+   https://github.com/MeanderingProgrammer/render-markdown.nvim
+
+Q: How do I filter issues to only show my assigned tasks?
+A: Add the filter in your configuration:
+>lua
+    require("jira").setup({
+      cli = {
+        issues = {
+          filters = { "-s~archive", "-s~done", "--assignee", "me" },
+        },
+      },
+    })
+<
+
+Q: Can I customize the issue picker layout?
+A: Yes, via the |jira-layout| configuration:
+>lua
+    require("jira").setup({
+      layout = {
+        issues = {
+          preset = "default",
+          layout = { width = 0.9, height = 0.8 },
+        },
+      },
+    })
+<
+
+Q: Failed to load issue details?
+A: Ensure:
+   1. jira-cli is configured: `jira init`
+   2. You have access to the project
+   3. Try refreshing the cache with `<M-r>`
+
+Q: How do I change the number of comments in previews?
+A: Use the |jira-preview-comments| configuration:
+>lua
+    require("jira").setup({
+      preview = {
+        nb_comments = 20,
+      },
+    })
+<
+
+==============================================================================
+13. License                                                  *jira-license*
+
+MIT License
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
