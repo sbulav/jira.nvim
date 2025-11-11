@@ -52,6 +52,7 @@ local function source_jira_issues()
     format = "format_jira_issues",
     preview = "preview_jira_issue",
     confirm = "action_jira_list_actions",
+    pattern = config.query.prefill_search,
 
     win = {
       input = {

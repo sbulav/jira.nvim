@@ -11,6 +11,7 @@ M.defaults = {
     columns = { "type", "key", "assignee", "status", "summary", "labels" },
     filters = { "-s~archive", "-s~done" },
     order_by = "status",
+    prefill_search = "",
   },
 
   display = {

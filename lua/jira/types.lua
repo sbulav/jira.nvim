@@ -6,6 +6,7 @@
 ---@field columns string[] Columns to display
 ---@field filters string[] Default filters for sprint list
 ---@field order_by string Sort order field
+---@field prefill_search string? Prefill the picker search input field
 
 ---@class jira.DisplayConfig
 ---@field type_icons table<string, string> Icons for issue types
