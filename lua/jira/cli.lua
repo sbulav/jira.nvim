@@ -11,8 +11,8 @@ local function execute(args, opts)
   opts = opts or {}
 
   local config = require("jira.config").options
-  local cmd = vim.deepcopy(config.cli.args or {})
-  vim.list_extend(cmd, { config.cli.cmd })
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, config.cli.args or {})
   vim.list_extend(cmd, args)
 
   -- Debug logging
