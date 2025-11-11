@@ -44,6 +44,57 @@ local function action_jira_copy_key(picker, item, action)
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
 
+---Get transitions with caching
+---@param issue_key string
+---@param callback fun(transitions: string[]?)
+local function get_transitions_cached(issue_key, callback)
+  local cache = require("jira.cache")
+  local project_key = issue_key:match("^([^-]+)")
+
+  if not project_key then
+    callback(nil)
+    return
+  end
+
+  local cached = cache.get(cache.keys.TRANSITIONS, { project = project_key })
+  if cached and cached.items then
+    callback(cached.items)
+    return
+  end
+
+  cli.get_transitions(issue_key, function(transitions)
+    if transitions and #transitions > 0 then
+      cache.set(cache.keys.TRANSITIONS, { project = project_key }, transitions)
+    end
+    callback(transitions)
+  end)
+end
+
+---Show transition selection UI
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+---@param transitions string[]
+local function show_transition_select(picker, item, transitions)
+  vim.ui.select(transitions, {
+    prompt = "Select transition:",
+  }, function(choice)
+    if not choice then
+      return
+    end
+
+    cli.transition_issue(item.key, choice, {
+      success_msg = string.format("Transitioned %s to %s", item.key, choice),
+      error_msg = string.format("Failed to transition %s", item.key),
+      on_success = function()
+        local cache = require("jira.cache")
+        cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+        cache.clear(cache.keys.ISSUES)
+        picker:refresh()
+      end,
+    })
+  end)
+end
+
 ---Transition issue to different status
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
@@ -53,34 +104,13 @@ local function action_jira_transition(picker, item, _)
     return
   end
 
-  cli.get_transitions(item.key, function(transitions)
-    if not transitions then
-      vim.notify("Failed to fetch transitions", vim.log.levels.ERROR)
+  get_transitions_cached(item.key, function(transitions)
+    if not transitions or #transitions == 0 then
+      vim.notify("No transitions available", vim.log.levels.WARN)
       return
     end
 
-    if #transitions == 0 then
-      vim.notify("No transitions available", vim.log.levels.INFO)
-      return
-    end
-
-    vim.ui.select(transitions, {
-      prompt = "Select transition:",
-    }, function(choice)
-      if not choice then
-        return
-      end
-
-      -- Execute transition
-      cli.transition_issue(item.key, choice, {
-        success_msg = string.format("Transitioned %s to %s", item.key, choice),
-        error_msg = string.format("Failed to transition %s", item.key),
-        on_success = function()
-          require("jira.cache").clear()
-          picker:refresh()
-        end,
-      })
-    end)
+    show_transition_select(picker, item, transitions)
   end)
 end
 
