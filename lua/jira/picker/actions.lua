@@ -321,7 +321,7 @@ local function get_jira_actions(item, ctx)
     },
 
     transition = {
-      name = "Edit issue status",
+      name = "Edit issue status / Transition",
       icon = " ",
       priority = 80,
       action = action_jira_transition,

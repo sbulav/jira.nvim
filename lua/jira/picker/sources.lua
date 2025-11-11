@@ -93,7 +93,7 @@ local function source_jira_actions()
 
   return {
     layout = config.layout.actions,
-    title = "  Actions",
+    title = "Actions",
     main = { current = true },
     finder = finders.get_actions,
     format = "format_jira_action",
