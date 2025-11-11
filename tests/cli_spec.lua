@@ -15,7 +15,11 @@ if not _G.vim then
       end
       local copy = {}
       for k, v in pairs(t) do
-        copy[k] = vim.deepcopy(v)
+        if type(v) == "table" then
+          copy[k] = vim.deepcopy(v)
+        else
+          copy[k] = v
+        end
       end
       return copy
     end,
@@ -94,7 +98,6 @@ describe("cli", function()
       options = {
         cli = {
           cmd = "jira",
-          args = {},
         },
         debug = false,
       },
@@ -260,6 +263,7 @@ describe("cli", function()
             cmd = "jira",
           },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = { "--assignee", "me" },
             order_by = "created",
             columns = { "key", "summary", "status" },
@@ -292,6 +296,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = { "--status", "In Progress", "--priority", "High" },
             order_by = "updated",
             columns = { "key", "summary" },
@@ -314,6 +319,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "priority",
             columns = { "key" },
@@ -342,6 +348,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "created",
             columns = { "key", "summary", "assignee", "priority" },
@@ -370,6 +377,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "created",
             columns = { "key" },
@@ -391,6 +399,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "created",
             columns = { "key" },
@@ -410,6 +419,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "created",
             columns = { "key" },
@@ -439,6 +449,7 @@ describe("cli", function()
         options = {
           cli = { cmd = "jira" },
           query = {
+            args = { "sprint", "list", "--current" },
             filters = {},
             order_by = "created",
             columns = { "key" },

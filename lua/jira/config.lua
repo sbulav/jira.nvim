@@ -4,10 +4,10 @@ local M = {}
 M.defaults = {
   cli = {
     cmd = "jira",
-    args = { "sprint", "list", "--current" },
   },
 
   query = {
+    args = { "sprint", "list", "--current" },
     columns = { "type", "key", "assignee", "status", "summary", "labels" },
     filters = { "-s~archive", "-s~done" },
     order_by = "status",

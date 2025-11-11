@@ -1,8 +1,8 @@
 ---@class jira.CliConfig
 ---@field cmd string Path to jira CLI binary
----@field args string[] Default CLI arguments for sprint list
 
 ---@class jira.QueryConfig
+---@field args string[] Default CLI arguments for sprint list
 ---@field columns string[] Columns to display
 ---@field filters string[] Default filters for sprint list
 ---@field order_by string Sort order field

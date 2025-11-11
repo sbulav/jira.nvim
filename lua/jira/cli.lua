@@ -13,7 +13,7 @@ local function _build_sprint_list_args()
   end
 
   -- Build command arguments
-  local args = { "sprint", "list", "--current" }
+  local args = vim.deepcopy(config.query.args)
 
   -- Add filters
   local filters = config.query.filters
