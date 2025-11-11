@@ -233,14 +233,14 @@ local function get_jira_actions(item, ctx)
     },
 
     copy_key = {
-      name = "Copy issue key to clipboard",
+      name = "Copy / Yank issue key to clipboard",
       icon = " ",
       priority = 90,
       action = action_jira_copy_key,
     },
 
     transition = {
-      name = "Edit status / Move issue",
+      name = "Edit issue status",
       icon = " ",
       priority = 80,
       action = action_jira_transition,
