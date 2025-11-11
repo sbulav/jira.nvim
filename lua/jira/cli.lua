@@ -55,14 +55,10 @@ end
 
 ---Build arguments for transitioning an issue
 ---@param key string Issue key
----@param transition string? Transition name (if nil, returns args for listing transitions)
+---@param transition string Transition name (if nil, returns args for listing transitions)
 ---@return table args command arguments
 local function _build_issue_move_args(key, transition)
-  if transition then
-    return { "issue", "move", key, transition }
-  else
-    return { "issue", "move", key }
-  end
+  return { "issue", "move", key, transition }
 end
 
 ---Build arguments for assigning an issue to a user
@@ -207,6 +203,61 @@ local function edit_issue_title(key, summary, opts)
   return execute(_build_issue_edit_summary_args(key, summary), opts)
 end
 
+---Get available transitions for an issue
+---@param issue_key string
+---@param callback fun(transitions: string[]?)
+local function get_transitions(issue_key, callback)
+  local config = require("jira.config").options
+
+  -- Note: jira-cli doesn't provide a non-interactive way to list transitions,
+  -- so we scrape the interactive prompt output by spawning the command,
+  -- capturing stdout, then killing it before it waits for user input
+  local stdout_chunks = {}
+  local job_id = vim.fn.jobstart({ config.cli.cmd, "issue", "move", issue_key }, {
+    stdout_buffered = false,
+    on_stdout = function(_, data, _)
+      for _, line in ipairs(data) do
+        if line ~= "" then
+          table.insert(stdout_chunks, line)
+        end
+      end
+    end,
+    on_exit = function(_, code, _)
+      -- Process terminated, parse output
+      local output = table.concat(stdout_chunks, "\n")
+
+      -- Parse transitions from the interactive prompt
+      -- Format: "  State Name" or "> State Name" (for selected)
+      local transitions = {}
+      for line in output:gmatch("[^\r\n]+") do
+        -- Strip ANSI escape codes
+        local cleaned = line:gsub("\27%[[%d;]*m", "")
+        -- Match lines that start with spaces or >
+        local state = cleaned:match("^%s+(.+)$") or cleaned:match("^>%s*(.+)$")
+        if state and state ~= "" then
+          -- Trim whitespace
+          state = state:match("^%s*(.-)%s*$")
+          if state ~= "" then
+            table.insert(transitions, state)
+          end
+        end
+      end
+
+      callback(#transitions > 0 and transitions or nil)
+    end,
+  })
+
+  if job_id <= 0 then
+    callback(nil)
+    return
+  end
+
+  -- Give it a moment to output the prompt, then kill it
+  vim.defer_fn(function()
+    vim.fn.jobstop(job_id)
+  end, 500)
+end
+
 ---Get sprint list arguments (for finders)
 ---@return table args command arguments for sprint list query
 local function get_sprint_list_args()
@@ -215,6 +266,9 @@ end
 
 local M = {}
 M.execute = execute
+M.get_sprint_list_args = get_sprint_list_args
+
+-- Execute actions
 M.open_issue = open_issue
 M.get_current_user = get_current_user
 M.transition_issue = transition_issue
@@ -222,5 +276,5 @@ M.assign_issue = assign_issue
 M.unassign_issue = unassign_issue
 M.comment_issue = comment_issue
 M.edit_issue_title = edit_issue_title
-M.get_sprint_list_args = get_sprint_list_args
+M.get_transitions = get_transitions
 return M

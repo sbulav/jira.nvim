@@ -35,76 +35,18 @@ local function action_jira_copy_key(picker, item, action)
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
 
---- Get available transitions for an issue
----@param issue_key string
----@param callback fun(transitions: string[]?)
-local function get_transitions(issue_key, callback)
-  local config = require("jira.config").options
-
-  -- Spawn jira move command which shows interactive prompt with transitions
-  local stdout_chunks = {}
-  local job_id = vim.fn.jobstart({ config.cli.cmd, "issue", "move", issue_key }, {
-    stdout_buffered = false,
-    on_stdout = function(_, data, _)
-      for _, line in ipairs(data) do
-        if line ~= "" then
-          table.insert(stdout_chunks, line)
-        end
-      end
-    end,
-    on_exit = function(_, code, _)
-      -- Process terminated, parse output
-      local output = table.concat(stdout_chunks, "\n")
-
-      -- Strip all ANSI escape codes
-      local function strip_ansi(str)
-        -- Remove ANSI escape sequences: ESC [ ... m
-        return str:gsub("\27%[[%d;]*m", "")
-      end
-
-      -- Parse transitions from the interactive prompt
-      -- Format: "  State Name" or "> State Name" (for selected)
-      local transitions = {}
-      for line in output:gmatch("[^\r\n]+") do
-        local cleaned = strip_ansi(line)
-        -- Match lines that start with spaces or >
-        local state = cleaned:match("^%s+(.+)$") or cleaned:match("^>%s*(.+)$")
-        if state and state ~= "" then
-          -- Trim whitespace
-          state = state:match("^%s*(.-)%s*$")
-          if state ~= "" then
-            table.insert(transitions, state)
-          end
-        end
-      end
-
-      callback(#transitions > 0 and transitions or nil)
-    end,
-  })
-
-  if job_id <= 0 then
-    callback(nil)
-    return
-  end
-
-  -- Give it a moment to output the prompt, then kill it
-  vim.defer_fn(function()
-    vim.fn.jobstop(job_id)
-  end, 500)
-end
-
 --- Transition issue to different status
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
----@param action snacks.picker.Action
-local function action_jira_transition(picker, item, action)
+---@param _ snacks.picker.Action
+local function action_jira_transition(picker, item, _)
   if not item.key then
     vim.notify("No issue key available", vim.log.levels.WARN)
     return
   end
 
   -- Get available transitions dynamically
-  get_transitions(item.key, function(transitions)
+  cli.get_transitions(item.key, function(transitions)
     if not transitions then
       vim.notify("Failed to fetch transitions", vim.log.levels.ERROR)
       return
