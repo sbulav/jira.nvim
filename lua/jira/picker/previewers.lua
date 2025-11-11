@@ -9,6 +9,7 @@ local function preview_jira_issue(ctx)
   end
 
   local config = require("jira.config").options
+  local cli = require("jira.cli")
   local markdown = require("jira.markdown")
 
   -- Show loading indicator
@@ -16,19 +17,8 @@ local function preview_jira_issue(ctx)
   ctx.preview:set_title(item.key)
   ctx.preview:notify("Loading issue details...", "info")
 
-  -- Build command
-  local cmd = {
-    config.cli.cmd,
-    "issue",
-    "view",
-    item.key,
-    "--plain",
-    "--comments",
-    tostring(config.display.preview_comments),
-  }
-
   -- Execute command asynchronously
-  vim.system(cmd, { text = true }, vim.schedule_wrap(function(result)
+  cli.get_issue_view(item.key, config.display.preview_comments, vim.schedule_wrap(function(result)
     -- Validate preview is still valid
     if not ctx.preview.win:buf_valid() then
       return

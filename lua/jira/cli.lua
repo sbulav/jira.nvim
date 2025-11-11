@@ -197,6 +197,30 @@ local function edit_issue_title(key, summary, opts)
   execute(_build_issue_edit_summary_args(key, summary), opts)
 end
 
+---Get issue view (formatted output for preview)
+---@param key string Issue key
+---@param comments_count number Number of comments to include
+---@param callback fun(result: table) Callback with vim.system result
+local function get_issue_view(key, comments_count, callback)
+  local config = require("jira.config").options
+  local cmd = {
+    config.cli.cmd,
+    "issue",
+    "view",
+    key,
+    "--plain",
+    "--comments",
+    tostring(comments_count),
+  }
+
+  -- Execute command asynchronously
+  vim.system(cmd, { text = true }, function(result)
+    vim.schedule(function()
+      callback(result)
+    end)
+  end)
+end
+
 ---Get issue description
 ---@param key string Issue key
 ---@param callback fun(description: string?) Callback with description or nil on error
@@ -359,6 +383,7 @@ M.assign_issue = assign_issue
 M.unassign_issue = unassign_issue
 M.comment_issue = comment_issue
 M.edit_issue_title = edit_issue_title
+M.get_issue_view = get_issue_view
 M.get_issue_description = get_issue_description
 M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions

@@ -348,6 +348,7 @@ M._format_comment_author = format_comment_author
 M._format_section_header = format_section_header
 M._process_header = process_header
 M._plain_to_markdown = plain_to_markdown
+
 M.adf_to_markdown = adf_to_markdown
 M.format_issue = format_issue
 return M
