@@ -104,7 +104,9 @@ local function action_jira_assign_me(picker, item, action)
         success_msg = string.format("Assigned %s to you", item.key),
         error_msg = string.format("Failed to assign %s", item.key),
         on_success = function()
-          require("jira.cache").clear()
+          local cache = require("jira.cache")
+          cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+          cache.clear(cache.keys.ISSUES)
           picker:refresh()
         end,
       })
@@ -125,7 +127,9 @@ local function action_jira_unassign(picker, item, action)
     success_msg = string.format("Unassigned %s", item.key),
     error_msg = string.format("Failed to unassign %s", item.key),
     on_success = function()
-      require("jira.cache").clear()
+      local cache = require("jira.cache")
+      cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+      cache.clear(cache.keys.ISSUES)
       picker:refresh()
     end,
   })
@@ -147,6 +151,8 @@ local function submit_comment(issue_key, win)
     success_msg = string.format("Added comment to %s", issue_key),
     error_msg = string.format("Failed to comment on %s", issue_key),
     on_success = function()
+      local cache = require("jira.cache")
+      cache.clear(cache.keys.ISSUE_VIEW, { key = issue_key })
       win:close()
     end,
   })
@@ -214,7 +220,9 @@ local function action_jira_edit_summary(picker, item, action)
       success_msg = string.format("Updated summary for %s", item.key),
       error_msg = string.format("Failed to update summary for %s", item.key),
       on_success = function()
-        require("jira.cache").clear()
+        local cache = require("jira.cache")
+        cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+        cache.clear(cache.keys.ISSUES)
         picker:refresh()
       end,
     })
@@ -235,7 +243,7 @@ local function submit_description(issue_key, win, picker)
     on_success = function()
       -- Clear cache for issue queries
       local cache = require("jira.cache")
-      cache.clear()
+      cache.clear(cache.keys.ISSUE_VIEW, { key = issue_key })
       win:close()
       picker:refresh()
     end,
@@ -244,7 +252,7 @@ end
 
 ---Edit issue description
 ---@param picker snacks.Picker
----@param item snacks.picker.Item
+---@paget_issue_description.Item
 ---@param action snacks.picker.Action
 local function action_jira_edit_description(picker, item, action)
   if not validate_item_key(item) then
@@ -361,17 +369,8 @@ end
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
 local function action_jira_refresh_cache(picker, item, action)
-  local cache = require("jira.cache")
-
-  -- Clear all caches
-  cache.clear()
-
-  -- Refresh picker with skip_cache flag
-  -- Note: snacks picker doesn't directly support passing opts to refresh
-  -- So we clear cache first, then refresh normally
+  require("jira.cache").clear()
   picker:refresh()
-
-  vim.notify("Cache cleared and refreshed", vim.log.levels.INFO)
 end
 
 ---Action to show action dialog

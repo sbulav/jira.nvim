@@ -112,6 +112,8 @@ M.defaults = {
     -- Keymaps on Snacks preview window
     preview = {
       ["<CR>"] = "action_jira_list_actions",
+      ["<M-y>"] = "action_jira_copy_key",
+      ["<M-m>"] = "action_jira_transition",
       ["<M-c>"] = "action_jira_add_comment",
     },
   },

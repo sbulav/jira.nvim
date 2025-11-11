@@ -222,5 +222,6 @@ M.keys = {
   ISSUES = "issues",
   EPICS = "epics",
   EPIC_ISSUES = "epic_issues",
+  ISSUE_VIEW = "issue_view",
 }
 return M

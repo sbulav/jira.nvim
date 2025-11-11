@@ -292,12 +292,26 @@ end
 ---@param comments_count number Number of comments to include
 ---@param callback fun(result: table) Callback with vim.system result
 local function view_issue(key, comments_count, callback)
+  local cache = require("jira.cache")
   local config = require("jira.config").options
+
+  -- Check cache first
+  local cached = cache.get(cache.keys.ISSUE_VIEW, { key = key })
+  if cached then
+    vim.schedule(function()
+      callback(cached.items)
+    end)
+    return
+  end
+
+  -- Cache miss - execute command
   local cmd = { config.cli.cmd }
   vim.list_extend(cmd, _build_issue_view_args(key, comments_count))
 
-  -- Execute command asynchronously
   vim.system(cmd, { text = true }, function(result)
+    -- Cache the result
+    cache.set(cache.keys.ISSUE_VIEW, { key = key }, result)
+
     vim.schedule(function()
       callback(result)
     end)
@@ -307,7 +321,7 @@ end
 ---Get issue description
 ---@param key string Issue key
 ---@param callback fun(description: string?) Callback with description or nil on error
-local function view_issue_description(key, callback)
+local function get_issue_description(key, callback)
   local config = require("jira.config").options
   local cmd = { config.cli.cmd }
   vim.list_extend(cmd, _build_issue_view_raw_args(key))
@@ -443,7 +457,7 @@ M.unassign_issue = unassign_issue
 M.comment_issue = comment_issue
 M.edit_issue_summary = edit_issue_summary
 M.view_issue = view_issue
-M.view_issue_description = view_issue_description
+M.get_issue_description = get_issue_description
 M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions
 return M
