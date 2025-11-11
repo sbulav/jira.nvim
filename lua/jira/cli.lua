@@ -292,26 +292,11 @@ end
 ---@param comments_count number Number of comments to include
 ---@param callback fun(result: table) Callback with vim.system result
 local function view_issue(key, comments_count, callback)
-  local cache = require("jira.cache")
   local config = require("jira.config").options
-
-  -- Check cache first
-  local cached = cache.get(cache.keys.ISSUE_VIEW, { key = key })
-  if cached then
-    vim.schedule(function()
-      callback(cached.items)
-    end)
-    return
-  end
-
-  -- Cache miss - execute command
   local cmd = { config.cli.cmd }
   vim.list_extend(cmd, _build_issue_view_args(key, comments_count))
 
   vim.system(cmd, { text = true }, function(result)
-    -- Cache the result
-    cache.set(cache.keys.ISSUE_VIEW, { key = key }, result)
-
     vim.schedule(function()
       callback(result)
     end)
