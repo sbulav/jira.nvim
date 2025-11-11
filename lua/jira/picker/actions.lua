@@ -1,3 +1,5 @@
+local cli = require("jira.cli")
+
 --- Open issue in browser
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
@@ -8,20 +10,10 @@ local function action_jira_open_browser(picker, item, action)
     return
   end
 
-  local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "open", item.key }
-
-  if config.debug then
-    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-  end
-
-  local result = vim.system(cmd, { text = true }):wait()
-
-  if result.code == 0 then
-    vim.notify(string.format("Opened %s in browser", item.key), vim.log.levels.INFO)
-  else
-    vim.notify(string.format("Failed to open %s: %s", item.key, result.stderr or "Unknown error"), vim.log.levels.ERROR)
-  end
+  cli.execute({ "open", item.key }, {
+    success_msg = string.format("Opened %s in browser", item.key),
+    error_msg = string.format("Failed to open %s", item.key),
+  })
 end
 
 --- Copy issue key to clipboard
@@ -111,8 +103,6 @@ local function action_jira_transition(picker, item, action)
     return
   end
 
-  local config = require("jira.config").options
-
   -- Get available transitions dynamically
   get_transitions(item.key, function(transitions)
     if not transitions then
@@ -133,23 +123,13 @@ local function action_jira_transition(picker, item, action)
       end
 
       -- Execute transition
-      local move_cmd = { config.cli.cmd, "issue", "move", item.key, choice }
-
-      if config.debug then
-        vim.notify("JIRA CLI Command:\n" .. table.concat(move_cmd, " "), vim.log.levels.INFO)
-      end
-
-      local transition_result = vim.system(move_cmd, { text = true }):wait()
-
-      if transition_result.code == 0 then
-        vim.notify(string.format("Transitioned %s to %s", item.key, choice), vim.log.levels.INFO)
-        picker:refresh()
-      else
-        vim.notify(
-          string.format("Failed to transition %s: %s", item.key, transition_result.stderr or "Unknown error"),
-          vim.log.levels.ERROR
-        )
-      end
+      cli.execute({ "issue", "move", item.key, choice }, {
+        success_msg = string.format("Transitioned %s to %s", item.key, choice),
+        error_msg = string.format("Failed to transition %s", item.key),
+        on_success = function()
+          picker:refresh()
+        end,
+      })
     end)
   end)
 end
@@ -164,34 +144,24 @@ local function action_jira_assign_me(picker, item, action)
     return
   end
 
-  local config = require("jira.config").options
-
   -- First get current user
-  local me_result = vim.system({ config.cli.cmd, "me" }, { text = true }):wait()
+  local me_result = cli.execute({ "me" }, {
+    error_msg = "Failed to get current user",
+  })
 
   if me_result.code ~= 0 then
-    vim.notify("Failed to get current user", vim.log.levels.ERROR)
     return
   end
 
   local me = vim.trim(me_result.stdout)
-  local cmd = { config.cli.cmd, "issue", "assign", item.key, me }
 
-  if config.debug then
-    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-  end
-
-  local result = vim.system(cmd, { text = true }):wait()
-
-  if result.code == 0 then
-    vim.notify(string.format("Assigned %s to you", item.key), vim.log.levels.INFO)
-    picker:refresh()
-  else
-    vim.notify(
-      string.format("Failed to assign %s: %s", item.key, result.stderr or "Unknown error"),
-      vim.log.levels.ERROR
-    )
-  end
+  cli.execute({ "issue", "assign", item.key, me }, {
+    success_msg = string.format("Assigned %s to you", item.key),
+    error_msg = string.format("Failed to assign %s", item.key),
+    on_success = function()
+      picker:refresh()
+    end,
+  })
 end
 
 --- Unassign issue
@@ -204,24 +174,13 @@ local function action_jira_unassign(picker, item, action)
     return
   end
 
-  local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "issue", "assign", item.key, "x" }
-
-  if config.debug then
-    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-  end
-
-  local result = vim.system(cmd, { text = true }):wait()
-
-  if result.code == 0 then
-    vim.notify(string.format("Unassigned %s", item.key), vim.log.levels.INFO)
-    picker:refresh()
-  else
-    vim.notify(
-      string.format("Failed to unassign %s: %s", item.key, result.stderr or "Unknown error"),
-      vim.log.levels.ERROR
-    )
-  end
+  cli.execute({ "issue", "assign", item.key, "x" }, {
+    success_msg = string.format("Unassigned %s", item.key),
+    error_msg = string.format("Failed to unassign %s", item.key),
+    on_success = function()
+      picker:refresh()
+    end,
+  })
 end
 
 --- Submit comment from scratch buffer
@@ -236,24 +195,13 @@ local function submit_comment(issue_key, win)
     return
   end
 
-  local config = require("jira.config").options
-  local cmd = { config.cli.cmd, "issue", "comment", "add", issue_key, comment }
-
-  if config.debug then
-    vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-  end
-
-  local result = vim.system(cmd, { text = true }):wait()
-
-  if result.code == 0 then
-    vim.notify(string.format("Added comment to %s", issue_key), vim.log.levels.INFO)
-    win:close()
-  else
-    vim.notify(
-      string.format("Failed to comment on %s: %s", issue_key, result.stderr or "Unknown error"),
-      vim.log.levels.ERROR
-    )
-  end
+  cli.execute({ "issue", "comment", "add", issue_key, comment }, {
+    success_msg = string.format("Added comment to %s", issue_key),
+    error_msg = string.format("Failed to comment on %s", issue_key),
+    on_success = function()
+      win:close()
+    end,
+  })
 end
 
 --- Add comment to issue
@@ -318,24 +266,13 @@ local function action_jira_edit_title(picker, item, action)
       return
     end
 
-    local config = require("jira.config").options
-    local cmd = { config.cli.cmd, "issue", "edit", item.key, "--summary", new_title, "--no-input" }
-
-    if config.debug then
-      vim.notify("JIRA CLI Command:\n" .. table.concat(cmd, " "), vim.log.levels.INFO)
-    end
-
-    local result = vim.system(cmd, { text = true }):wait()
-
-    if result.code == 0 then
-      vim.notify(string.format("Updated title for %s", item.key), vim.log.levels.INFO)
-      picker:refresh()
-    else
-      vim.notify(
-        string.format("Failed to update title for %s: %s", item.key, result.stderr or "Unknown error"),
-        vim.log.levels.ERROR
-      )
-    end
+    cli.execute({ "issue", "edit", item.key, "--summary", new_title, "--no-input" }, {
+      success_msg = string.format("Updated title for %s", item.key),
+      error_msg = string.format("Failed to update title for %s", item.key),
+      on_success = function()
+        picker:refresh()
+      end,
+    })
   end)
 end
 
