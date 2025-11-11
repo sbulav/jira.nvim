@@ -8,7 +8,7 @@
 ---@field order_by string Sort order field
 ---@field prefill_search string? Prefill the picker search input field
 
----@class jira.DisplayConfig
+---@class jira.UIConfig
 ---@field type_icons table<string, string> Icons for issue types
 ---@field type_highlights table<string, string> Highlight groups for issue types
 ---@field status_highlights table<string, string> Highlight groups for statuses
@@ -32,7 +32,7 @@
 ---@field query jira.QueryConfig Query settings
 ---@field epic jira.QueryConfig Epic query settings
 ---@field epic_issues jira.QueryConfig Epic issues query settings
----@field display jira.DisplayConfig Display settings
+---@field ui jira.UIConfig UI settings
 ---@field layout jira.LayoutConfig Layout settings
 ---@field keymaps jira.Keymaps Custom keymaps
 ---@field debug boolean Enable debug mode to print CLI commands

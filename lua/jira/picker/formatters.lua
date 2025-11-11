@@ -16,15 +16,15 @@ local function format_jira_issues(item, picker)
 
   -- Type badge with icon (more compact)
   local config = require("jira.config").options
-  local type_icons = config.display.type_icons
+  local type_icons = config.ui.type_icons
   local icon = type_icons[item.type] or type_icons.default
-  local type_highlights = config.display.type_highlights
+  local type_highlights = config.ui.type_highlights
   local type_hl = type_highlights[item.type] or "Comment"
 
   table.insert(ret, { icon .. " ", type_hl })
 
   -- Issue key (compact)
-  local issue_hl = config.display.issue_highlights
+  local issue_hl = config.ui.issue_highlights
   table.insert(ret, { pad_to_width(item.key or "", 10), issue_hl.key })
   table.insert(ret, { " " })
 
@@ -35,7 +35,7 @@ local function format_jira_issues(item, picker)
 
   -- Status badge (compact)
   local status = item.status or "Unknown"
-  local status_highlights = config.display.status_highlights
+  local status_highlights = config.ui.status_highlights
   local status_hl = status_highlights[status] or "Comment"
   table.insert(ret, { pad_to_width(status, 22), status_hl })
   table.insert(ret, { " " })
@@ -65,7 +65,7 @@ end
 local function format_jira_action(item, picker)
   local ret = {}
   local config = require("jira.config").options
-  local action_hl = config.display.action_highlights
+  local action_hl = config.ui.action_highlights
 
   -- Format: "icon  number. description" (two spaces after icon)
   local icon, num, rest = item.text:match("^([^%s]+)%s+(%d+%.%s)(.*)$")
@@ -91,20 +91,20 @@ local function format_jira_epics(item, picker)
   local config = require("jira.config").options
 
   -- Epic icon
-  local type_icons = config.display.type_icons
+  local type_icons = config.ui.type_icons
   local icon = type_icons.Epic or type_icons.default
-  local type_highlights = config.display.type_highlights
+  local type_highlights = config.ui.type_highlights
   local type_hl = type_highlights.Epic or "Comment"
   table.insert(ret, { icon .. " ", type_hl })
 
   -- Epic key
-  local issue_hl = config.display.issue_highlights
+  local issue_hl = config.ui.issue_highlights
   table.insert(ret, { pad_to_width(item.key or "", 10), issue_hl.key })
   table.insert(ret, { " " })
 
   -- Status
   local status = item.status or "Unknown"
-  local status_highlights = config.display.status_highlights
+  local status_highlights = config.ui.status_highlights
   local status_hl = status_highlights[status] or "Comment"
   table.insert(ret, { pad_to_width(status, 13), status_hl })
   table.insert(ret, { " " })

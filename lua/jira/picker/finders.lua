@@ -106,7 +106,7 @@ end
 ---@param config table Plugin configuration
 ---@return table Picker item
 local function transform_epic(epic, config)
-  local icon = config.display.type_icons.Epic or config.display.type_icons.default
+  local icon = config.ui.type_icons.Epic or config.ui.type_icons.default
 
   return {
     text = string.format("%s %s %s", icon, epic.key or "", epic.summary or ""),

@@ -44,7 +44,7 @@ M.defaults = {
     actions = { preset = "select", layout = { max_width = 60 } },
   },
 
-  display = {
+  ui = {
     -- Icons displayed for each issue type
     type_icons = {
       Bug = "󰃤",
