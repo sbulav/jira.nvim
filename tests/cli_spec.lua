@@ -262,7 +262,6 @@ describe("cli", function()
           query = {
             filters = { "--assignee", "me" },
             order_by = "created",
-            paginate = "100",
             columns = { "key", "summary", "status" },
           },
           debug = false,
@@ -280,8 +279,6 @@ describe("cli", function()
         "me",
         "--order-by",
         "created",
-        "--paginate",
-        "100",
         "--csv",
         "--columns",
         "key,summary,status",
@@ -297,7 +294,6 @@ describe("cli", function()
           query = {
             filters = { "--status", "In Progress", "--priority", "High" },
             order_by = "updated",
-            paginate = "50",
             columns = { "key", "summary" },
           },
           debug = false,
@@ -320,7 +316,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "priority",
-            paginate = "100",
             columns = { "key" },
           },
           debug = false,
@@ -342,35 +337,6 @@ describe("cli", function()
       assert.are.equal("priority", args[order_idx + 1])
     end)
 
-    it("should handle custom paginate", function()
-      package.loaded["jira.config"] = {
-        options = {
-          cli = { cmd = "jira" },
-          query = {
-            filters = {},
-            order_by = "created",
-            paginate = "200",
-            columns = { "key" },
-          },
-          debug = false,
-        },
-      }
-
-      cli = require("jira.cli")
-      local args = cli.get_sprint_list_args()
-
-      local paginate_idx = nil
-      for i, v in ipairs(args) do
-        if v == "--paginate" then
-          paginate_idx = i
-          break
-        end
-      end
-
-      assert.is_not_nil(paginate_idx)
-      assert.are.equal("200", args[paginate_idx + 1])
-    end)
-
     it("should handle custom columns", function()
       package.loaded["jira.config"] = {
         options = {
@@ -378,7 +344,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "created",
-            paginate = "100",
             columns = { "key", "summary", "assignee", "priority" },
           },
           debug = false,
@@ -407,7 +372,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "created",
-            paginate = "100",
             columns = { "key" },
           },
           debug = true,
@@ -429,7 +393,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "created",
-            paginate = "100",
             columns = { "key" },
           },
           debug = false,
@@ -449,7 +412,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "created",
-            paginate = "100",
             columns = { "key" },
           },
           debug = false,
@@ -479,7 +441,6 @@ describe("cli", function()
           query = {
             filters = {},
             order_by = "created",
-            paginate = "100",
             columns = { "key" },
           },
           debug = false,
