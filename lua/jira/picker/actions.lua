@@ -76,10 +76,7 @@ local function action_jira_transition(picker, item, _)
         success_msg = string.format("Transitioned %s to %s", item.key, choice),
         error_msg = string.format("Failed to transition %s", item.key),
         on_success = function()
-          -- Clear cache for issue queries
-          local cache = require("jira.cache")
-          cache.clear_pattern("issues%")
-          cache.clear_pattern("epic_issues%")
+          require("jira.cache").clear()
           picker:refresh()
         end,
       })
@@ -107,10 +104,7 @@ local function action_jira_assign_me(picker, item, action)
         success_msg = string.format("Assigned %s to you", item.key),
         error_msg = string.format("Failed to assign %s", item.key),
         on_success = function()
-          -- Clear cache for issue queries
-          local cache = require("jira.cache")
-          cache.clear_pattern("issues%")
-          cache.clear_pattern("epic_issues%")
+          require("jira.cache").clear()
           picker:refresh()
         end,
       })
@@ -131,10 +125,7 @@ local function action_jira_unassign(picker, item, action)
     success_msg = string.format("Unassigned %s", item.key),
     error_msg = string.format("Failed to unassign %s", item.key),
     on_success = function()
-      -- Clear cache for issue queries
-      local cache = require("jira.cache")
-      cache.clear_pattern("issues%")
-      cache.clear_pattern("epic_issues%")
+      require("jira.cache").clear()
       picker:refresh()
     end,
   })
@@ -223,10 +214,7 @@ local function action_jira_edit_summary(picker, item, action)
       success_msg = string.format("Updated summary for %s", item.key),
       error_msg = string.format("Failed to update summary for %s", item.key),
       on_success = function()
-        -- Clear cache for issue queries
-        local cache = require("jira.cache")
-        cache.clear_pattern("issues%")
-        cache.clear_pattern("epic_issues%")
+        require("jira.cache").clear()
         picker:refresh()
       end,
     })
@@ -247,8 +235,7 @@ local function submit_description(issue_key, win, picker)
     on_success = function()
       -- Clear cache for issue queries
       local cache = require("jira.cache")
-      cache.clear_pattern("issues%")
-      cache.clear_pattern("epic_issues%")
+      cache.clear()
       win:close()
       picker:refresh()
     end,

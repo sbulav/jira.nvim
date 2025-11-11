@@ -25,41 +25,18 @@ local function parse_csv_line(line)
   return values
 end
 
----Generic JIRA finder factory
----@param cache_key string Cache key for this query type
----@param cache_params? table Optional parameters for cache key
+---Pure data fetching without cache
 ---@param args_fn function Function that returns CLI arguments
 ---@param columns string[] Column names to map
 ---@param transform_fn function Function that transforms parsed data into picker item
 ---@return snacks.picker.finder
-local function create_jira_finder(cache_key, cache_params, args_fn, columns, transform_fn)
+local function fetch_jira_data(args_fn, columns, transform_fn)
   return function(opts, ctx)
     local config = require("jira.config").options
-    local cache = require("jira.cache")
-
-    -- Check if we should use cache
-    local use_cache = config.cache.enabled or true
-
-    -- Try to get from cache first
-    if use_cache then
-      local cached = cache.get(cache_key, cache_params)
-      if cached and cached.items then
-        ---@async
-        return function(cb)
-          for _, item in ipairs(cached.items) do
-            cb(item)
-          end
-        end
-      end
-    end
-
-    -- Cache miss or skipped, fetch from CLI and wrap to cache results
     local args = args_fn(opts)
-    local items = {} -- Collect items for caching
-    local proc_done = false
-
     local first_line = true
-    local proc_result = require("snacks.picker.source.proc").proc(
+
+    return require("snacks.picker.source.proc").proc(
       ctx:opts({
         cmd = config.cli.cmd,
         args = args,
@@ -87,24 +64,54 @@ local function create_jira_finder(cache_key, cache_params, args_fn, columns, tra
           end
 
           -- Apply custom transformation
-          local transformed = transform_fn(data, config)
-
-          -- Collect for caching
-          if transformed then
-            table.insert(items, transformed)
-          end
-
-          return transformed
+          return transform_fn(data, config)
         end,
       }),
       ctx
     )
+  end
+end
+
+---Wraps a finder with caching logic
+---@param cache_key string Cache key for this query type
+---@param cache_params? table Optional parameters for cache key
+---@param finder_fn function Finder function to wrap
+---@return snacks.picker.finder
+local function with_cache(cache_key, cache_params, finder_fn)
+  return function(opts, ctx)
+    local config = require("jira.config").options
+    local cache = require("jira.cache")
+
+    -- Check if we should use cache
+    local use_cache = config.cache.enabled or true
+
+    -- Try to get from cache first
+    if use_cache then
+      local cached = cache.get(cache_key, cache_params)
+      if cached and cached.items then
+        ---@async
+        return function(cb)
+          for _, item in ipairs(cached.items) do
+            cb(item)
+          end
+        end
+      end
+    end
+
+    -- Cache miss or skipped, fetch from source and cache results
+    local items = {} -- Collect items for caching
+    local proc_done = false
+
+    local proc_result = finder_fn(opts, ctx)
 
     -- Wrap the proc result to cache items after streaming completes
     ---@async
     return function(cb)
-      -- Call the original proc streamer
+      -- Call the original proc streamer, collecting items
       proc_result(function(item)
+        if item then
+          table.insert(items, item)
+        end
         cb(item)
       end)
 
@@ -117,6 +124,18 @@ local function create_jira_finder(cache_key, cache_params, args_fn, columns, tra
       end)
     end
   end
+end
+
+---Generic JIRA finder factory
+---@param cache_key string Cache key for this query type
+---@param cache_params? table Optional parameters for cache key
+---@param args_fn function Function that returns CLI arguments
+---@param columns string[] Column names to map
+---@param transform_fn function Function that transforms parsed data into picker item
+---@return snacks.picker.finder
+local function create_jira_finder(cache_key, cache_params, args_fn, columns, transform_fn)
+  local fetcher = fetch_jira_data(args_fn, columns, transform_fn)
+  return with_cache(cache_key, cache_params, fetcher)
 end
 
 ---Transform function for issue items (sprint and epic issues)
@@ -169,9 +188,10 @@ end
 local function get_jira_issues(opts, ctx)
   local config = require("jira.config").options
   local cli = require("jira.cli")
+  local cache = require("jira.cache")
 
   return create_jira_finder(
-    "issues",
+    cache.keys.ISSUES,
     nil,
     cli.get_sprint_list_args,
     config.cli.issues.columns,
@@ -183,9 +203,10 @@ end
 local function get_jira_epics(opts, ctx)
   local config = require("jira.config").options
   local cli = require("jira.cli")
+  local cache = require("jira.cache")
 
   return create_jira_finder(
-    "epics",
+    cache.keys.EPICS,
     nil,
     cli.get_epic_list_args,
     config.cli.epics.columns,
@@ -205,9 +226,10 @@ local function get_jira_epic_issues(epic_key, opts, ctx)
 
   local config = require("jira.config").options
   local cli = require("jira.cli")
+  local cache = require("jira.cache")
 
   return create_jira_finder(
-    "epic_issues",
+    cache.keys.EPIC_ISSUES,
     { epic_key = epic_key },
     function() return cli.get_epic_issues_args(epic_key) end,
     config.cli.epic_issues.columns,

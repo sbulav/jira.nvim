@@ -84,9 +84,10 @@ local function clear(query_type, params)
   end
 
   if not query_type then
-    -- Clear all cache
     database:exec("DELETE FROM cache;")
-    vim.notify("JIRA cache cleared", vim.log.levels.INFO)
+    if require("jira.config").options.debug then
+      vim.notify("[JIRA Cache] Cache cleared", vim.log.levels.INFO)
+    end
   else
     local key = make_key(query_type, params)
     local delete = database:prepare("DELETE FROM cache WHERE key = ?;")
@@ -141,7 +142,7 @@ local function get(query_type, params)
     end
 
     if config.debug then
-      vim.notify(string.format("[JIRA Cache] HIT - Found %d items (cached at %s)", #items, os.date("%Y-%m-%d %H:%M:%S", math.floor(timestamp))), vim.log.levels.INFO)
+      vim.notify(string.format("[JIRA Cache] HIT - Found %d items (cached at %s)", #items, os.date("%Y-%m-%d %H:%M:%S", timestamp)), vim.log.levels.INFO)
     end
 
     return {
@@ -196,24 +197,6 @@ local function set(query_type, params, items)
   insert:close()
 end
 
----Clear cache matching a pattern (e.g., "issues%" to clear all issue queries)
----@param pattern string SQL LIKE pattern
-local function clear_pattern(pattern)
-  local config = require("jira.config").options
-  local database = init_db()
-  if not database then
-    return
-  end
-
-  if config.debug then
-    vim.notify(string.format("[JIRA Cache] Clearing cache matching pattern: %s", pattern), vim.log.levels.INFO)
-  end
-
-  local delete = database:prepare("DELETE FROM cache WHERE key LIKE ?;")
-  delete:exec({ pattern })
-  delete:close()
-end
-
 ---Close the database connection
 local function close()
   if db then
@@ -234,6 +217,9 @@ local M = {}
 M.get = get
 M.set = set
 M.clear = clear
-M.clear_pattern = clear_pattern
-M.close = close
+M.keys = {
+  ISSUES = "issues",
+  EPICS = "epics",
+  EPIC_ISSUES = "epic_issues",
+}
 return M
