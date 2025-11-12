@@ -266,9 +266,9 @@ local function get_actions(opts, ctx)
       -- Extract icon from the beginning of text (emoji followed by space)
       local icon, rest = it.text:match("^([^%s]+)%s(.+)$")
       if icon and rest then
-        it.text = ("%s  %d. %s"):format(icon, i, rest)
+        it.text = ("%s  %02d. %s"):format(icon, i, rest)
       else
-        it.text = ("%d. %s"):format(i, it.text)
+        it.text = ("%02d. %s"):format(i, it.text)
       end
       cb(it)
     end
