@@ -3,6 +3,15 @@ local cli = require("jira.cli")
 local CLIPBOARD_REG = "+"
 local DEFAULT_REG = '"'
 
+---Clear issue-related caches
+---@param issue_key string
+local function clear_issue_caches(issue_key)
+  local cache = require("jira.cache")
+  cache.clear(cache.keys.ISSUE_VIEW, { key = issue_key })
+  cache.clear(cache.keys.ISSUES)
+  cache.clear(cache.keys.EPIC_ISSUES)
+end
+
 ---Validates that item has a key
 ---@param item snacks.picker.Item
 ---@return boolean valid True if item has key, false otherwise
@@ -86,10 +95,7 @@ local function show_transition_select(picker, item, transitions)
       success_msg = string.format("Transitioned %s to %s", item.key, choice),
       error_msg = string.format("Failed to transition %s", item.key),
       on_success = function()
-        local cache = require("jira.cache")
-        cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-        cache.clear(cache.keys.ISSUES)
-        cache.clear(cache.keys.EPIC_ISSUES)
+        clear_issue_caches(item.key)
         picker:refresh()
       end,
     })
@@ -132,10 +138,7 @@ local function action_jira_assign_me(picker, item, action)
         success_msg = string.format("Assigned %s to you", item.key),
         error_msg = string.format("Failed to assign %s", item.key),
         on_success = function()
-          local cache = require("jira.cache")
-          cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-          cache.clear(cache.keys.ISSUES)
-          cache.clear(cache.keys.EPIC_ISSUES)
+          clear_issue_caches(item.key)
           picker:refresh()
         end,
       })
@@ -156,10 +159,7 @@ local function action_jira_unassign(picker, item, action)
     success_msg = string.format("Unassigned %s", item.key),
     error_msg = string.format("Failed to unassign %s", item.key),
     on_success = function()
-      local cache = require("jira.cache")
-      cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-      cache.clear(cache.keys.ISSUES)
-      cache.clear(cache.keys.EPIC_ISSUES)
+      clear_issue_caches(item.key)
       picker:refresh()
     end,
   })
@@ -202,15 +202,8 @@ local function show_sprint_select(picker, item, sprints)
         success_msg = string.format("Moved %s to sprint: %s", item.key, selected_sprint.name),
         error_msg = string.format("Failed to move %s to sprint", item.key),
         on_success = function()
-          local cache = require("jira.cache")
-          cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-          cache.clear(cache.keys.ISSUES)
-          cache.clear(cache.keys.EPIC_ISSUES)
-
-          -- Close sprint picker
+          clear_issue_caches(item.key)
           sprint_picker:close()
-
-          -- Refresh main picker
           if picker then
             picker:focus()
             picker:refresh()
@@ -327,10 +320,7 @@ local function action_jira_edit_summary(picker, item, action)
       success_msg = string.format("Updated summary for %s", item.key),
       error_msg = string.format("Failed to update summary for %s", item.key),
       on_success = function()
-        local cache = require("jira.cache")
-        cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-        cache.clear(cache.keys.ISSUES)
-        cache.clear(cache.keys.EPIC_ISSUES)
+        clear_issue_caches(item.key)
         picker:refresh()
       end,
     })
@@ -348,7 +338,6 @@ local function submit_description(issue_key, win, picker)
     success_msg = string.format("Updated description for %s", issue_key),
     error_msg = string.format("Failed to update description for %s", issue_key),
     on_success = function()
-      -- Clear cache for issue queries
       local cache = require("jira.cache")
       cache.clear(cache.keys.ISSUE_VIEW, { key = issue_key })
       win:close()
