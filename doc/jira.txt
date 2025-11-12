@@ -164,6 +164,7 @@ configuration:
         epic_issues = nil,
         epics = { preset = "select", layout = { max_width = 120 } },
         actions = { preset = "select", layout = { max_width = 60 } },
+        sprints = { preset = "select", layout = { max_width = 60 } },
       },
 
       preview = {
@@ -209,6 +210,11 @@ configuration:
           number = "Number",
           description = "",
           fallback = "",
+        },
+
+        sprint_highlights = {
+          name = "",
+          state = "Comment",
         },
       },
 

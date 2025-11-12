@@ -228,5 +228,6 @@ M.keys = {
   EPIC_ISSUES = "epic_issues",
   ISSUE_VIEW = "issue_view",
   TRANSITIONS = "transitions",
+  SPRINTS = "sprints",
 }
 return M

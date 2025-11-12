@@ -100,9 +100,25 @@ local function source_jira_actions()
   }
 end
 
+---Builds the configuration for the JIRA sprints picker.
+---@return snacks.picker.source The configuration for the JIRA sprints picker
+local function source_jira_sprints()
+  local config = require("jira.config").options
+  local finders = require("jira.picker.finders")
+
+  return {
+    layout = config.layout.sprints,
+    title = "Select Sprint",
+    main = { current = true },
+    finder = finders.get_sprints,
+    format = "format_jira_sprint",
+  }
+end
+
 local M = {}
 M.source_jira_issues = source_jira_issues()
 M.source_jira_actions = source_jira_actions()
 M.source_jira_epics = source_jira_epics()
 M.source_jira_epic_issues = source_jira_epic_issues
+M.source_jira_sprints = source_jira_sprints()
 return M

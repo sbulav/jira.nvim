@@ -115,8 +115,36 @@ local function format_jira_epics(item, picker)
   return ret
 end
 
+---Format sprint item for display in sprint picker
+---@param item snacks.picker.Item
+---@param picker snacks.Picker
+---@return snacks.picker.Highlight[]
+local function format_jira_sprint(item, picker)
+  local ret = {}
+  local config = require("jira.config").options
+  local sprint_hl = config.ui.sprint_highlights
+
+  -- Parse the display text: "name [state]" or "name []"
+  local name, state = (item.text or ""):match("^(.*)%s%[([^%]]*)%]$")
+
+  if name then
+    if state and state ~= "" then
+      table.insert(ret, { pad_to_width(name, 30), sprint_hl.name })
+      table.insert(ret, { " " })
+      table.insert(ret, { state, sprint_hl.state })
+    else
+      table.insert(ret, { name, sprint_hl.name })
+    end
+  else
+    table.insert(ret, { item.text or "", sprint_hl.name })
+  end
+
+  return ret
+end
+
 local M = {}
 M.format_jira_issues = format_jira_issues
 M.format_jira_action = format_jira_action
 M.format_jira_epics = format_jira_epics
+M.format_jira_sprint = format_jira_sprint
 return M

@@ -162,6 +162,20 @@ local function _build_issue_view_raw_args(key)
   return { "issue", "view", key, "--raw" }
 end
 
+---Build arguments for listing sprints
+---@return table args command arguments
+local function _build_sprint_list_for_selection_args()
+  return { "sprint", "list", "--table", "--plain", "--columns", "id,name,state", "--state", "active,future", "--no-headers" }
+end
+
+---Build arguments for moving issue to sprint
+---@param sprint_id string Sprint ID
+---@param issue_key string Issue key
+---@return table args command arguments
+local function _build_sprint_add_issue_args(sprint_id, issue_key)
+  return { "sprint", "add", sprint_id, issue_key }
+end
+
 --
 -- EXECUTION FUNCTIONS
 --
@@ -402,6 +416,47 @@ local function get_transitions(issue_key, callback)
   end, 500)
 end
 
+---Get available sprints
+---@param callback fun(sprints: table[]?) Callback with array of {id, name, state} or nil on error
+local function get_sprints(callback)
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, _build_sprint_list_for_selection_args())
+
+  vim.system(cmd, { text = true }, function(result)
+    vim.schedule(function()
+      if result.code ~= 0 then
+        callback(nil)
+        return
+      end
+
+      -- Parse TSV output: ID\tNAME\tSTATE
+      local sprints = {}
+      for line in result.stdout:gmatch("[^\r\n]+") do
+        local id, name, state = line:match("^([^\t]+)\t([^\t]+)\t([^\t]+)$")
+        if id and name and state then
+          table.insert(sprints, {
+            id = vim.trim(id),
+            name = vim.trim(name),
+            state = vim.trim(state),
+            display = string.format("%s [%s]", vim.trim(name), vim.trim(state)),
+          })
+        end
+      end
+
+      callback(#sprints > 0 and sprints or nil)
+    end)
+  end)
+end
+
+---Move issue to sprint
+---@param issue_key string Issue key
+---@param sprint_id string Sprint ID
+---@param opts table? Options for execute (success_msg, error_msg, callbacks)
+local function move_issue_to_sprint(issue_key, sprint_id, opts)
+  execute(_build_sprint_add_issue_args(sprint_id, issue_key), opts)
+end
+
 ---Get sprint list arguments (for finders)
 ---@return table args command arguments for sprint list query
 local function get_sprint_list_args()
@@ -439,4 +494,6 @@ M.view_issue = view_issue
 M.get_issue_description = get_issue_description
 M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions
+M.get_sprints = get_sprints
+M.move_issue_to_sprint = move_issue_to_sprint
 return M

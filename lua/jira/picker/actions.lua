@@ -82,17 +82,17 @@ local function show_transition_select(picker, item, transitions)
       return
     end
 
-      cli.transition_issue(item.key, choice, {
-        success_msg = string.format("Transitioned %s to %s", item.key, choice),
-        error_msg = string.format("Failed to transition %s", item.key),
-        on_success = function()
-          local cache = require("jira.cache")
-          cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
-          cache.clear(cache.keys.ISSUES)
-          cache.clear(cache.keys.EPIC_ISSUES)
-          picker:refresh()
-        end,
-      })
+    cli.transition_issue(item.key, choice, {
+      success_msg = string.format("Transitioned %s to %s", item.key, choice),
+      error_msg = string.format("Failed to transition %s", item.key),
+      on_success = function()
+        local cache = require("jira.cache")
+        cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+        cache.clear(cache.keys.ISSUES)
+        cache.clear(cache.keys.EPIC_ISSUES)
+        picker:refresh()
+      end,
+    })
   end)
 end
 
@@ -165,6 +165,81 @@ local function action_jira_unassign(picker, item, action)
   })
 end
 
+---Get sprints with caching
+---@param callback fun(sprints: table[]?)
+local function get_sprints_cached(callback)
+  local cache = require("jira.cache")
+
+  local cached = cache.get(cache.keys.SPRINTS)
+  if cached and cached.items then
+    callback(cached.items)
+    return
+  end
+
+  cli.get_sprints(function(sprints)
+    if sprints and #sprints > 0 then
+      cache.set(cache.keys.SPRINTS, nil, sprints)
+    end
+    callback(sprints)
+  end)
+end
+
+---Show sprint selection UI using Snacks picker
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+---@param sprints table[]
+local function show_sprint_select(picker, item, sprints)
+  require("snacks").picker("source_jira_sprints", {
+    sprints = sprints,
+    confirm = function(sprint_picker, sprint_item, action)
+      if not sprint_item or not sprint_item.sprint then
+        return
+      end
+
+      local selected_sprint = sprint_item.sprint
+
+      cli.move_issue_to_sprint(item.key, selected_sprint.id, {
+        success_msg = string.format("Moved %s to sprint: %s", item.key, selected_sprint.name),
+        error_msg = string.format("Failed to move %s to sprint", item.key),
+        on_success = function()
+          local cache = require("jira.cache")
+          cache.clear(cache.keys.ISSUE_VIEW, { key = item.key })
+          cache.clear(cache.keys.ISSUES)
+          cache.clear(cache.keys.EPIC_ISSUES)
+
+          -- Close sprint picker
+          sprint_picker:close()
+
+          -- Refresh main picker
+          if picker then
+            picker:focus()
+            picker:refresh()
+          end
+        end,
+      })
+    end,
+  })
+end
+
+---Update issue sprint
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+---@param _ snacks.picker.Action
+local function action_jira_update_sprint(picker, item, _)
+  if not validate_item_key(item) then
+    return
+  end
+
+  get_sprints_cached(function(sprints)
+    if not sprints or #sprints == 0 then
+      vim.notify("No active or future sprints available", vim.log.levels.WARN)
+      return
+    end
+
+    show_sprint_select(picker, item, sprints)
+  end)
+end
+
 ---Submit comment from scratch buffer
 ---@param issue_key string
 ---@param win snacks.win
@@ -211,7 +286,9 @@ local function action_jira_add_comment(picker, item, action)
       keys = {
         submit = {
           "<c-s>",
-          function(win) submit_comment(item.key, win) end,
+          function(win)
+            submit_comment(item.key, win)
+          end,
           desc = "Submit comment",
           mode = { "n", "i" },
         },
@@ -309,7 +386,9 @@ local function action_jira_edit_description(picker, item, action)
         keys = {
           submit = {
             "<c-s>",
-            function(win) submit_description(item.key, win, picker) end,
+            function(win)
+              submit_description(item.key, win, picker)
+            end,
             desc = "Submit description",
             mode = { "n", "i" },
           },
@@ -375,31 +454,38 @@ local function get_jira_actions(item, ctx)
       action = action_jira_unassign,
     },
 
+    update_sprint = {
+      name = "Move issue to sprint",
+      icon = " ",
+      priority = 50,
+      action = action_jira_update_sprint,
+    },
+
     edit_summary = {
       name = "Edit summary/title",
       icon = "󰏫 ",
-      priority = 50,
+      priority = 40,
       action = action_jira_edit_summary,
     },
 
     edit_description = {
       name = "Edit description",
       icon = " ",
-      priority = 40,
+      priority = 30,
       action = action_jira_edit_description,
     },
 
     comment = {
       name = "Add comment to issue",
       icon = " ",
-      priority = 30,
+      priority = 20,
       action = action_jira_add_comment,
     },
 
     refresh = {
       name = "Refresh",
       icon = " ",
-      priority = 20,
+      priority = 10,
       action = action_jira_refresh_cache,
     },
   }
@@ -442,6 +528,7 @@ M.action_jira_copy_key = action_jira_copy_key
 M.action_jira_transition = action_jira_transition
 M.action_jira_assign_me = action_jira_assign_me
 M.action_jira_unassign = action_jira_unassign
+M.action_jira_update_sprint = action_jira_update_sprint
 M.action_jira_add_comment = action_jira_add_comment
 M.action_jira_refresh_cache = action_jira_refresh_cache
 return M

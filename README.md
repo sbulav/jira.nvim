@@ -83,137 +83,21 @@ require("jira").setup({
 
 ## Configuration
 
-<details>
-<summary>View default configuration</summary>
-
-```lua
-{
-  cli = {
-    cmd = "jira",  -- CLI command path
-
-    issues = {  -- Current sprint issues
-      args = { "sprint", "list", "--current" },
-      columns = { "type", "key", "assignee", "status", "summary", "labels" },
-      filters = { "-s~archive", "-s~done" },
-      order_by = "status",
-      prefill_search = "",
-    },
-
-    epics = {  -- Epic list
-      args = { "issue", "list", "--type", "Epic" },
-      columns = { "key", "summary", "status" },
-      filters = { "-s~done", "-s~closed", "-s~archive" },
-      order_by = "created",
-      prefill_search = "",
-    },
-
-    epic_issues = {  -- Issues within epic
-      args = { "issue", "list" },
-      columns = { "type", "key", "assignee", "status", "summary", "labels" },
-      filters = { "-s~archive", "-s~done" },
-      order_by = "status",
-      prefill_search = "",
-    },
-  },
-
-  layout = {  -- Picker layouts
-    issues = nil,
-    epic_issues = nil,
-    epics = { preset = "select", layout = { max_width = 120 } },
-    actions = { preset = "select", layout = { max_width = 60 } },
-  },
-
-  preview = {
-    nb_comments = 10,  -- Number of comments in preview
-  },
-
-  ui = {
-    type_icons = {
-      Bug = "󰃤",
-      Story = "",
-      Task = "",
-      ["Sub-task"] = "",
-      Epic = "󱐋",
-      default = "󰄮",
-    },
-
-    type_highlights = {
-      Bug = "DiagnosticError",
-      Story = "DiagnosticInfo",
-      Task = "DiagnosticWarn",
-      Epic = "Special",
-    },
-
-    status_highlights = {
-      ["To Do"] = "DiagnosticHint",
-      ["In Progress"] = "DiagnosticWarn",
-      ["In Review"] = "DiagnosticInfo",
-      ["Done"] = "DiagnosticOk",
-      ["Blocked"] = "DiagnosticError",
-      ["Awaiting Information"] = "Comment",
-      ["Triage"] = "DiagnosticInfo",
-    },
-
-    issue_highlights = {
-      key = "",
-      assignee = "Identifier",
-      summary = "",
-      labels = "Comment",
-    },
-
-    action_highlights = {
-      icon = "Special",
-      number = "Number",
-      description = "",
-      fallback = "",
-    },
-  },
-
-  keymaps = {
-    input = {
-      ["<M-y>"] = { "action_jira_copy_key", mode = { "i", "n" } },
-      ["<M-t>"] = { "action_jira_transition", mode = { "i", "n" } },
-      ["<M-c>"] = { "action_jira_add_comment", mode = { "i", "n" } },
-      ["<M-r>"] = { "action_jira_refresh_cache", mode = { "i", "n" } },
-    },
-    list = {
-      ["<CR>"] = "action_jira_list_actions",
-      ["y"] = "action_jira_copy_key",
-      ["gt"] = "action_jira_transition",
-      ["gc"] = "action_jira_add_comment",
-      ["<M-r>"] = "action_jira_refresh_cache",
-    },
-    preview = {
-      ["<CR>"] = "action_jira_list_actions",
-      ["<M-y>"] = "action_jira_copy_key",
-      ["<M-t>"] = "action_jira_transition",
-      ["<M-c>"] = "action_jira_add_comment",
-    },
-  },
-
-  cache = {
-    enabled = true,
-    -- path = vim.fn.stdpath("data") .. "/jira/cache.sqlite3",  -- Optional
-  },
-
-  debug = false,
-}
-```
-
-</details>
+[View default configuration](./lua/jira/config.lua)
 
 ## Actions
 
 When you press `<CR>` on an issue, you get the following actions:
 
 1. **Open in browser** - Opens issue in default browser
-2. **Copy key** - Yanks issue key to clipboard
-3. **Transition** - Change issue status
-4. **Assign to me** - Assigns issue to you
-5. **Unassign** - Removes assignee
-6. **Edit summary** - Edit issue title
-7. **Edit description** - Edit issue description (markdown)
-8. **Add comment** - Add comment (markdown)
+1. **Copy key** - Yanks issue key to clipboard
+1. **Transition** - Change issue status
+1. **Assign to me** - Assigns issue to you
+1. **Unassign** - Removes assignee
+1. **Move issue to spring** - Move the issue to a sprint
+1. **Edit summary** - Edit issue title
+1. **Edit description** - Edit issue description (markdown)
+1. **Add comment** - Add comment (markdown)
 
 ## Customization Examples
 

@@ -275,10 +275,34 @@ local function get_actions(opts, ctx)
   end
 end
 
+---Gets sprints from opts and formats them for display in a picker.
+---@param opts snacks.picker.finder_opts Options passed to the finder
+---@param ctx snacks.picker.finder_context Context for the finder
+local function get_sprints(opts, ctx)
+  local sprints = opts.sprints or (ctx.ctx and ctx.ctx.sprints) or {}
+
+  -- Sort by state ascending (active before future)
+  table.sort(sprints, function(a, b)
+    return a.state < b.state
+  end)
+
+  ---@async
+  return function(cb)
+    for _, sprint in ipairs(sprints) do
+      cb({
+        text = sprint.name .. " [" .. sprint.state .. "]",
+        sprint = sprint,
+        name = sprint.name,
+        state = sprint.state,
+      })
+    end
+  end
+end
 
 local M = {}
 M.get_jira_issues = get_jira_issues
 M.get_jira_epics = get_jira_epics
 M.get_jira_epic_issues = get_jira_epic_issues
 M.get_actions = get_actions
+M.get_sprints = get_sprints
 return M

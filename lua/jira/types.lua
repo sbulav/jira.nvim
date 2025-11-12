@@ -17,6 +17,7 @@
 ---@field status_highlights table<string, string> Highlight groups for statuses
 ---@field issue_highlights table<string, string> Highlight groups for issue fields (key, assignee, summary, labels)
 ---@field action_highlights table<string, string> Highlight groups for action dialog (icon, number, description, fallback)
+---@field sprint_highlights table<string, string> Highlight groups for sprint fields (state, name)
 
 ---@class jira.PreviewConfig
 ---@field nb_comments number Number of comments to show in preview
@@ -31,6 +32,7 @@
 ---@field epic_issues table? Layout configuration for epic issues picker
 ---@field epics table? Layout configuration for epics picker
 ---@field actions table? Layout configuration for actions picker
+---@field sprints table? Layout configuration for sprints picker
 
 ---@class jira.CacheConfig
 ---@field enabled boolean Enable/disable caching of JIRA query results

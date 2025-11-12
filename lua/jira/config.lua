@@ -41,6 +41,7 @@ local defaults = {
     epic_issues = nil,
     epics = { preset = "select", layout = { max_width = 120 } },
     actions = { preset = "select", layout = { max_width = 60 } },
+    sprints = { preset = "select", layout = { max_width = 60 } },
   },
 
   -- Preview configuration
@@ -89,6 +90,11 @@ local defaults = {
       number = "Number", -- Action number (e.g., "1.")
       description = "", -- Action description text
       fallback = "", -- Used when action format doesn't match expected pattern
+    },
+    -- Highlight groups for sprint picker items
+    sprint_highlights = {
+      name = "", -- Sprint name
+      state = "Comment", -- Sprint state (e.g., "active", "future")
     },
   },
 
