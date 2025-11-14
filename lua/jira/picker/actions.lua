@@ -75,6 +75,27 @@ function M.action_jira_copy_key(picker, item, action)
   vim.notify(string.format("Copied %s to clipboard", item.key), vim.log.levels.INFO)
 end
 
+---Copy issue URL to clipboard
+---@param picker snacks.Picker
+---@param item snacks.picker.Item
+---@param action snacks.picker.Action
+function M.action_jira_copy_url(picker, item, action)
+  if not validate_item_key(item) then
+    return
+  end
+
+  local url = cli.get_issue_url(item.key)
+  if not url then
+    vim.notify("Failed to get server URL from config", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.fn.setreg(CLIPBOARD_REG, url)
+  vim.fn.setreg(DEFAULT_REG, url)
+
+  vim.notify(string.format("Copied %s to clipboard", url), vim.log.levels.INFO)
+end
+
 ---Get transitions with caching
 ---@param issue_key string
 ---@param callback fun(transitions: string[]?)
@@ -411,6 +432,13 @@ function M.get_jira_actions(item, ctx)
       icon = " ",
       priority = 90,
       action = M.action_jira_copy_key,
+    },
+
+    copy_url = {
+      name = "Copy / Yank issue URL to clipboard",
+      icon = " ",
+      priority = 88,
+      action = M.action_jira_copy_url,
     },
 
     transition = {

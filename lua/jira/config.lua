@@ -4,6 +4,9 @@ local defaults = {
     -- Cmd to invoke the Jira CLI tool
     cmd = "jira",
 
+    -- Path to jira CLI config file
+    config_path = "~/.config/.jira/.config.yml",
+
     -- Configuration for fetching current sprint issues
     issues = {
       args = { "sprint", "list", "--current" },

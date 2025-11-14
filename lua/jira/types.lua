@@ -7,6 +7,7 @@
 
 ---@class jira.CliConfig
 ---@field cmd string Path to jira CLI binary
+---@field config_path string Path to jira CLI config file
 ---@field issues jira.QueryConfig Query settings for sprint issues
 ---@field epics jira.QueryConfig Query settings for epics
 ---@field epic_issues jira.QueryConfig Query settings for epic issues

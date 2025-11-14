@@ -90,6 +90,29 @@ local function _build_issue_open_args(key)
   return { "open", key }
 end
 
+---Get server URL from jira config
+---@return string|nil server Server URL or nil if not found
+local function _get_server_url()
+  local config = require("jira.config").options
+  local config_path = vim.fn.expand(config.cli.config_path)
+  local file = io.open(config_path, "r")
+
+  if not file then
+    return nil
+  end
+
+  for line in file:lines() do
+    local server = line:match("^server:%s*(.+)")
+    if server then
+      file:close()
+      return vim.trim(server)
+    end
+  end
+
+  file:close()
+  return nil
+end
+
 ---Build arguments for getting current user
 ---@return table args command arguments
 local function _build_me_args()
@@ -256,6 +279,17 @@ end
 ---@param opts table? Options for execute (success_msg, error_msg, callbacks)
 function M.open_issue(key, opts)
   M.execute(_build_issue_open_args(key), opts)
+end
+
+---Get issue URL
+---@param key string Issue key
+---@return string|nil url Issue URL or nil if server not configured
+function M.get_issue_url(key)
+  local server = _get_server_url()
+  if not server then
+    return nil
+  end
+  return string.format("%s/browse/%s", server, key)
 end
 
 ---Get current user

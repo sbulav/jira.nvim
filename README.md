@@ -96,6 +96,7 @@ When you press `<CR>` on an issue, you get the following actions:
 1. **View issue in buffer** - View issue in a dedicated read-only markdown buffer (inherits your default settings)
 1. **Start work on issue** - Assign to you, move to active sprint, transition, create git branch, yank key
 1. **Copy key** - Yanks issue key to clipboard
+1. **Copy URL** - Yanks issue URL to clipboard
 1. **Transition** - Change issue status
 1. **Assign to me** - Assigns issue to you
 1. **Unassign** - Removes assignee

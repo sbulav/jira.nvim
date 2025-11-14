@@ -12,4 +12,4 @@ run = "LUA_PATH='lua/?.lua;lua/?/init.lua;;' busted --verbose tests/"
 
 [tasks.check]
 description = "Check Lua syntax for all files"
-run = "find lua -name '*.lua' -exec luac -p {} \\;"
+run = "find lua -name '*.lua' | xargs -I {} sh -c 'luac -p {} && echo \"✓ {}\" || echo \"✗ {}\"'"

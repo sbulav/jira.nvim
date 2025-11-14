@@ -134,6 +134,7 @@ configuration:
     require("jira").setup({
       cli = {
         cmd = "jira",  -- CLI command path
+        config_path = "~/.config/.jira/.config.yml",  -- jira CLI config file path
 
         issues = {
           args = { "sprint", "list", "--current" },
@@ -278,6 +279,13 @@ cli.cmd                                                       *jira-cli-cmd*
     Default: `"jira"`
 
     Path to the jira CLI executable.
+
+cli.config_path                                       *jira-cli-config-path*
+    Type: `string`
+    Default: `"~/.config/.jira/.config.yml"`
+
+    Path to the jira CLI config file. This is used to extract the JIRA server
+    URL for building issue URLs (used by the "Copy URL" action).
 
 cli.issues                                                 *jira-cli-issues*
     Type: `table`
@@ -524,14 +532,15 @@ When you press <CR> on an issue, the following actions are available:
 2. View in buffer           View the issue in a dedicated buffer (see below)
 3. Start work               Automate issue workflow (see below)
 4. Copy key                 Yank the issue key to clipboard
-5. Transition               Change the issue status
-6. Assign to me             Assign the issue to yourself
-7. Unassign                 Remove the assignee
-8. Create issue             Create a new JIRA issue (see below)
-9. Move issue to sprint     Move the issue to a sprint
-10. Edit summary            Edit the issue title
-11. Edit description        Edit the issue description (markdown editor)
-12. Add comment             Add a comment (markdown editor)
+5. Copy URL                 Yank the issue URL to clipboard
+6. Transition               Change the issue status
+7. Assign to me             Assign the issue to yourself
+8. Unassign                 Remove the assignee
+9. Create issue             Create a new JIRA issue (see below)
+10. Move issue to sprint    Move the issue to a sprint
+11. Edit summary            Edit the issue title
+12. Edit description        Edit the issue description (markdown editor)
+13. Add comment             Add a comment (markdown editor)
 
 Action-specific keymaps are also available for quick access without opening
 the actions menu. See |jira-default-keymaps|.
