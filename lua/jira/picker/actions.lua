@@ -578,7 +578,7 @@ local function get_jira_actions(item, ctx)
 
     copy_key = {
       name = "Copy / Yank issue key to clipboard",
-      icon = " ",
+      icon = " ",
       priority = 90,
       action = action_jira_copy_key,
     },
