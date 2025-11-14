@@ -33,7 +33,7 @@ end
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
-function M.action_jira_open_browser(picker, item, action)
+function M.action_jira_open_in_browser(picker, item, action)
   if not validate_item_key(item) then
     return
   end
@@ -385,11 +385,11 @@ end
 ---@return table<string, table> actions Map of action name to action metadata
 function M.get_jira_actions(item, ctx)
   return {
-    open_browser = {
+    open_in_browser = {
       name = "Open issue in browser",
       icon = " ",
       priority = 100,
-      action = M.action_jira_open_browser,
+      action = M.action_jira_open_in_browser,
     },
 
     view_in_buffer = {

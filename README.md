@@ -145,7 +145,7 @@ require("jira").setup({
 require("jira").setup({
   keymaps = {
     list = {
-      ["<C-b>"] = "action_jira_open_browser",
+      ["<C-b>"] = "action_jira_open_in_browser",
       ["<C-a>"] = "action_jira_assign_me",
     },
   },
