@@ -457,6 +457,53 @@ local function move_issue_to_sprint(issue_key, sprint_id, opts)
   execute(_build_sprint_add_issue_args(sprint_id, issue_key), opts)
 end
 
+---Build args for creating issue
+---@param issue_type string Type (Bug, Story, Task, Epic, etc.)
+---@param summary string Issue title
+---@param description string? Issue description (optional)
+---@param parent_key string? Parent epic key (optional)
+---@return table args CLI arguments
+local function _build_issue_create_args(issue_type, summary, description, parent_key)
+  local args = { "issue", "create", "-t", issue_type, "-s", summary, "--no-input" }
+
+  if description and description ~= "" then
+    table.insert(args, "-b")
+    table.insert(args, description)
+  end
+
+  if parent_key and parent_key ~= "" then
+    table.insert(args, "-P")
+    table.insert(args, parent_key)
+  end
+
+  return args
+end
+
+---Create a new issue
+---@param issue_type string
+---@param summary string
+---@param description string?
+---@param parent_key string?
+---@param opts table Options with on_success callback receiving (result, issue_key)
+local function create_issue(issue_type, summary, description, parent_key, opts)
+  local args = _build_issue_create_args(issue_type, summary, description, parent_key)
+
+  -- Wrap on_success to parse issue key from output
+  local original_on_success = opts.on_success
+  opts.on_success = function(result, _)
+    -- Parse issue key from output (format: "Issue created: PROJ-123" or JSON with --raw)
+    local issue_key = result.stdout:match("([A-Z]+-[0-9]+)")
+
+    if issue_key and original_on_success then
+      original_on_success(result, issue_key)
+    elseif not issue_key then
+      vim.notify("Failed to parse created issue key", vim.log.levels.ERROR)
+    end
+  end
+
+  execute(args, opts)
+end
+
 ---Get sprint list arguments (for finders)
 ---@return table args command arguments for sprint list query
 local function get_sprint_list_args()
@@ -496,4 +543,5 @@ M.edit_issue_description = edit_issue_description
 M.get_transitions = get_transitions
 M.get_sprints = get_sprints
 M.move_issue_to_sprint = move_issue_to_sprint
+M.create_issue = create_issue
 return M

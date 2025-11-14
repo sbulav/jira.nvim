@@ -30,6 +30,7 @@ https://github.com/folke/snacks.nvim/blob/main/docs/gh.md!
 
 Features:
   • Fuzzy search JIRA issues and epics
+  • Create new issues with epic and sprint association
   • Rich markdown previews with syntax highlighting
   • View issues in dedicated read-only buffers
   • SQLite-based caching for fast performance
@@ -498,9 +499,11 @@ When you press <CR> on an issue, the following actions are available:
 5. Transition               Change the issue status
 6. Assign to me             Assign the issue to yourself
 7. Unassign                 Remove the assignee
-8. Edit summary             Edit the issue title
-9. Edit description         Edit the issue description (markdown editor)
-10. Add comment             Add a comment (markdown editor)
+8. Create issue             Create a new JIRA issue (see below)
+9. Move issue to sprint     Move the issue to a sprint
+10. Edit summary            Edit the issue title
+11. Edit description        Edit the issue description (markdown editor)
+12. Add comment             Add a comment (markdown editor)
 
 Action-specific keymaps are also available for quick access without opening
 the actions menu. See |jira-default-keymaps|.
@@ -519,6 +522,27 @@ on a JIRA issue. By default, it performs the following steps:
 
 Each step can be individually enabled or disabled via the
 |jira-action-start-work| configuration. See |jira-customization| for examples.
+
+------------------------------------------------------------------------------
+CREATE ISSUE ACTION                                  *jira-action-create-issue*
+
+The "Create issue" action provides a guided workflow for creating new JIRA
+issues directly from Neovim:
+
+Workflow Steps:
+1. Select issue type        Choose from Bug, Story, Task, or Epic
+2. Enter summary            Provide the issue title
+3. Write description        Edit in a markdown scratch buffer (press <c-s> to
+                           submit)
+4. Associate to epic        (Optional) Link to a parent epic
+5. Move to sprint           (Optional) Assign to active or future sprint
+6. Auto-open                Created issue automatically opens in a buffer
+
+The action filters epics by status (In Progress, To Do, Open, New) and
+sprints by state (active, future) to show only relevant options.
+
+After creation, the new issue is automatically opened in a dedicated buffer
+for immediate viewing.
 
 ------------------------------------------------------------------------------
 VIEW IN BUFFER ACTION                             *jira-action-view-in-buffer*
@@ -681,6 +705,12 @@ A: Use the "View in buffer" action from the actions menu, or directly open a
     require("jira.buf").open("PROJ-123")
 <
    The buffer uses the jira:// URI scheme and supports markdown rendering.
+
+Q: How do I create a new JIRA issue?
+A: Use the "Create issue" action from the actions menu (<CR> on any issue).
+   You'll be guided through selecting the issue type, entering a summary,
+   writing a description, and optionally linking to an epic or sprint. The
+   created issue will automatically open in a buffer.
 
 ==============================================================================
 13. License                                                  *jira-license*

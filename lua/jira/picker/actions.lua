@@ -1,5 +1,7 @@
 local cli = require("jira.cli")
 local git = require("jira.git")
+local create_action = require("jira.picker.actions.create_issue")
+local ui = require("jira.picker.ui")
 
 local CLIPBOARD_REG = "+"
 local DEFAULT_REG = '"'
@@ -282,33 +284,13 @@ local function action_jira_add_comment(picker, item, action)
     return
   end
 
-  Snacks.scratch({
-    ft = "markdown",
-    name = string.format("Comment on %s", item.key),
-    template = "",
-    win = {
-      relative = "editor",
-      width = 160,
-      height = 15,
-      title = string.format(" Add Comment to %s ", item.key),
-      title_pos = "center",
-      border = "rounded",
-      keys = {
-        submit = {
-          "<c-s>",
-          function(win)
-            submit_comment(item.key, win)
-          end,
-          desc = "Submit comment",
-          mode = { "n", "i" },
-        },
-      },
-      on_win = function()
-        vim.schedule(function()
-          vim.cmd.startinsert()
-        end)
-      end,
-    },
+  ui.open_markdown_editor({
+    title = string.format("Add Comment to %s", item.key),
+    height = 15,
+    on_submit = function(text, win)
+      submit_comment(item.key, win)
+    end,
+    submit_desc = "Submit comment",
   })
 end
 
@@ -323,25 +305,20 @@ local function action_jira_edit_summary(picker, item, action)
 
   local current_title = item.summary or ""
 
-  vim.ui.input({ prompt = "Edit title: ", default = current_title }, function(new_title)
-    if not new_title or new_title == "" then
-      return
-    end
-
-    -- Skip if title unchanged
-    if new_title == current_title then
-      return
-    end
-
-    cli.edit_issue_summary(item.key, new_title, {
-      success_msg = string.format("Updated summary for %s", item.key),
-      error_msg = string.format("Failed to update summary for %s", item.key),
-      on_success = function()
-        clear_issue_caches(item.key)
-        picker:refresh()
-      end,
-    })
-  end)
+  ui.prompt_summary_input({
+    default = current_title,
+    skip_unchanged = true,
+    on_submit = function(new_title)
+      cli.edit_issue_summary(item.key, new_title, {
+        success_msg = string.format("Updated summary for %s", item.key),
+        error_msg = string.format("Failed to update summary for %s", item.key),
+        on_success = function()
+          clear_issue_caches(item.key)
+          picker:refresh()
+        end,
+      })
+    end,
+  })
 end
 
 ---Submit description from scratch buffer
@@ -378,33 +355,13 @@ local function action_jira_edit_description(picker, item, action)
       return
     end
 
-    Snacks.scratch({
-      ft = "markdown",
-      name = string.format("Edit Description - %s", item.key),
+    ui.open_markdown_editor({
+      title = string.format("Edit Description for %s", item.key),
       template = description,
-      win = {
-        relative = "editor",
-        width = 160,
-        height = 20,
-        title = string.format(" Edit Description for %s ", item.key),
-        title_pos = "center",
-        border = "rounded",
-        keys = {
-          submit = {
-            "<c-s>",
-            function(win)
-              submit_description(item.key, win, picker)
-            end,
-            desc = "Submit description",
-            mode = { "n", "i" },
-          },
-        },
-        on_win = function()
-          vim.schedule(function()
-            vim.cmd.startinsert()
-          end)
-        end,
-      },
+      on_submit = function(text, win)
+        submit_description(item.key, win, picker)
+      end,
+      submit_desc = "Submit description",
     })
   end)
 end
@@ -627,6 +584,13 @@ local function get_jira_actions(item, ctx)
       action = action_jira_unassign,
     },
 
+    create = {
+      name = "Create issue",
+      icon = " ",
+      priority = 55,
+      action = create_action.action_jira_create,
+    },
+
     update_sprint = {
       name = "Move issue to sprint",
       icon = " ",
@@ -701,6 +665,7 @@ end
 local M = {}
 M.get_jira_actions = get_jira_actions
 M.start_work_on_issue = start_work_on_issue
+M.get_sprints_cached = get_sprints_cached
 
 M.action_jira_list_actions = action_jira_list_actions
 M.action_jira_open_browser = action_jira_open_browser
@@ -712,4 +677,5 @@ M.action_jira_unassign = action_jira_unassign
 M.action_jira_update_sprint = action_jira_update_sprint
 M.action_jira_add_comment = action_jira_add_comment
 M.action_jira_refresh_cache = action_jira_refresh_cache
+M.action_jira_create = create_action.action_jira_create
 return M

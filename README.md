@@ -9,6 +9,7 @@ Neovim plugin for browsing and managing JIRA issues with a fuzzy-finding interfa
 ## Features
 
 - 🔍 Fuzzy search JIRA issues and epics
+- ➕ Create new issues with epic and sprint association
 - 📝 Rich markdown previews with syntax highlighting
 - 📄 View issues in dedicated read-only buffers
 - ⚡ SQLite-based caching for fast performance
@@ -98,10 +99,24 @@ When you press `<CR>` on an issue, you get the following actions:
 1. **Transition** - Change issue status
 1. **Assign to me** - Assigns issue to you
 1. **Unassign** - Removes assignee
+1. **Create issue** - Create a new JIRA issue with type selection, markdown description editor, optional epic association, and optional sprint assignment
 1. **Move issue to sprint** - Move the issue to a sprint
 1. **Edit summary** - Edit issue title
 1. **Edit description** - Edit issue description (markdown)
 1. **Add comment** - Add comment (markdown)
+
+### Creating Issues
+
+The **Create issue** action provides a guided workflow:
+
+1. **Select issue type** - Choose from Bug, Story, Task, or Epic
+2. **Enter summary** - Provide the issue title
+3. **Write description** - Edit in a markdown scratch buffer (press `<c-s>` to submit)
+4. **Associate to epic** (optional) - Link to a parent epic
+5. **Move to sprint** (optional) - Assign to active or future sprint
+6. **Auto-open** - Created issue automatically opens in a buffer
+
+The action filters epics by status (In Progress, To Do, Open, New) and sprints by state (active, future) to show only relevant options.
 
 ### Buffer View Keymaps
 
@@ -209,7 +224,8 @@ The plugin uses SQLite to cache JIRA data for better performance:
 Cached data includes:
 
 - Sprint issues
-- Epic lists
+- Epic lists (5 minute TTL)
+- Epics (5 minute TTL)
 - Issue previews
 - Available transitions (per project)
 
