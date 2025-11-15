@@ -225,8 +225,8 @@ The plugin uses SQLite to cache JIRA data for better performance:
 Cached data includes:
 
 - Sprint issues
-- Epic lists (5 minute TTL)
-- Epics (5 minute TTL)
+- Epic lists
+- Epics
 - Issue previews
 - Available transitions (per project)
 
