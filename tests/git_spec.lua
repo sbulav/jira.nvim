@@ -1,8 +1,7 @@
-describe("start_work", function()
-  local start_work = require("jira.picker.actions.start_work")
-
-  local sanitize_for_branch = start_work._sanitize_for_branch
-  local generate_branch_name = start_work._generate_branch_name
+describe("Git Utilities", function()
+  local git = require("jira.git")
+  local sanitize_for_branch = git.sanitize_for_branch
+  local generate_branch_name = git.generate_branch_name
 
   describe("sanitize_for_branch", function()
     it("should replace spaces with underscores", function()

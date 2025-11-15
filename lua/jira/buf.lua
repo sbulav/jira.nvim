@@ -45,7 +45,7 @@ end
 function M:keys()
   vim.keymap.set("n", "<CR>", function()
     local item = { key = self.issue_key }
-    require("jira.picker.actions").action_jira_list_actions(nil, item, nil)
+    require("jira.picker.actions.list_actions").action_jira_list_actions(nil, item, nil)
   end, { buffer = self.buf, desc = "Show actions" })
 
   vim.keymap.set("n", "q", function()

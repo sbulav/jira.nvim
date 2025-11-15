@@ -63,7 +63,7 @@ Optional~
 Using lazy.nvim~
 >lua
     {
-      "your-username/jira.nvim",
+      "l-lin/jira.nvim",
       dependencies = { "folke/snacks.nvim" },
       config = function()
         require("jira").setup()
@@ -75,7 +75,7 @@ Using lazy.nvim~
 Using packer.nvim~
 >lua
     use {
-      "your-username/jira.nvim",
+      "l-lin/jira.nvim",
       requires = { "folke/snacks.nvim" },
       config = function()
         require("jira").setup()

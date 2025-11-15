@@ -1,74 +1,146 @@
 local cli = require("jira.cli")
 local git = require("jira.git")
+local cache = require("jira.cache")
 
 local CLIPBOARD_REG = "+"
 local DEFAULT_REG = '"'
 
 local M = {}
 
----Validates that item has a key
----@param item snacks.picker.Item
----@return boolean valid True if item has key, false otherwise
-local function validate_item_key(item)
-  if not item.key then
-    vim.notify("No issue key available", vim.log.levels.WARN)
-    return false
-  end
-  return true
-end
-
----Clear issue-related caches
----@param issue_key string
-local function clear_issue_caches(issue_key)
-  local cache = require("jira.cache")
-  cache.clear(cache.keys.ISSUE_VIEW, { key = issue_key })
-  cache.clear(cache.keys.ISSUES)
-  cache.clear(cache.keys.EPIC_ISSUES)
-end
-
 ---Get sprints with caching (imported from actions module)
 ---@param callback fun(sprints: table[]?)
-local function get_sprints_cached(callback)
-  -- Import dynamically to avoid circular dependency
-  local actions = require("jira.picker.actions")
-  actions.get_sprints_cached(callback)
-end
-
----Sanitize text for branch name (replace spaces with underscores, remove special chars)
----@param text string
----@return string
-local function sanitize_for_branch(text)
-  if not text or text == "" then
-    return ""
+local function get_sprints(callback)
+  local cached = cache.get(cache.keys.SPRINTS)
+  if cached and cached.items then
+    callback(cached.items)
+    return
   end
-  -- Replace spaces with underscores, remove special characters (keep alphanumeric, underscores, hyphens)
-  return text:gsub("%s+", "_"):gsub("[^%w_-]", "")
+
+  cli.get_sprints(function(sprints)
+    if sprints and #sprints > 0 then
+      cache.set(cache.keys.SPRINTS, nil, sprints)
+    end
+    callback(sprints)
+  end)
 end
 
----Generate suggested branch name from issue key and summary
+---Assign issue to current user
+---@param issue_key string
+---@param step_done fun(step_name: string, err: string?, success_msg: string?)
+local function do_assign_step(issue_key, step_done)
+  cli.get_current_user({
+    error_msg = false,
+    on_success = function(result)
+      local me = vim.trim(result.stdout or "")
+      cli.assign_issue(issue_key, me, {
+        error_msg = false,
+        on_success = function()
+          step_done("Assign", nil, "assigned to you")
+        end,
+        on_error = function(err_result)
+          step_done("Assign", err_result.stderr or "Unknown error")
+        end,
+      })
+    end,
+    on_error = function(result)
+      step_done("Assign", result.stderr or "Failed to get current user")
+    end,
+  })
+end
+
+---Move issue to active sprint
+---@param issue_key string
+---@param step_done fun(step_name: string, err: string?, success_msg: string?)
+local function do_move_to_sprint_step(issue_key, step_done)
+  get_sprints(function(sprints)
+    if not sprints or #sprints == 0 then
+      step_done("Move to sprint", nil, "skipped (no sprints)")
+      return
+    end
+
+    local active = vim.tbl_filter(function(s)
+      return s.state == "active"
+    end, sprints)
+
+    if #active == 0 then
+      step_done("Move to sprint", nil, "skipped (no active sprint)")
+      return
+    end
+
+    cli.move_issue_to_sprint(issue_key, active[1].id, {
+      error_msg = false,
+      on_success = function()
+        step_done("Move to sprint", nil, string.format("moved to %s", active[1].name))
+      end,
+      on_error = function(result)
+        step_done("Move to sprint", result.stderr or "Unknown error")
+      end,
+    })
+  end)
+end
+
+---Transition issue to target state
+---@param issue_key string
+---@param transition string
+---@param step_done fun(step_name: string, err: string?, success_msg: string?)
+local function do_transition_step(issue_key, transition, step_done)
+  cli.transition_issue(issue_key, transition, {
+    error_msg = false,
+    on_success = function()
+      step_done("Transition", nil, string.format("transitioned to %s", transition))
+    end,
+    on_error = function(result)
+      step_done("Transition", result.stderr or "Unknown error")
+    end,
+  })
+end
+
+---Create or switch to git branch
 ---@param issue_key string
 ---@param summary string?
----@return string
-local function generate_branch_name(issue_key, summary)
-  if not summary or summary == "" then
-    return issue_key
+---@param step_done fun(step_name: string, err: string?, success_msg: string?)
+local function do_git_branch_step(issue_key, summary, step_done)
+  if not git.is_git_repo() then
+    step_done("Git branch", nil, "skipped (not in git repo)")
+    return
   end
-  local sanitized = sanitize_for_branch(summary)
-  if sanitized == "" then
-    return issue_key
-  end
-  return string.format("%s-%s", issue_key, sanitized)
+
+  local suggested_branch = git.generate_branch_name(issue_key, summary)
+  vim.ui.input({
+    prompt = "Branch name: ",
+    default = suggested_branch,
+  }, function(branch_name)
+    if not branch_name or branch_name == "" then
+      step_done("Git branch", nil, "skipped (cancelled)")
+      return
+    end
+    git.switch_branch(branch_name, function(err, mode)
+      if err then
+        step_done("Git branch", err)
+      else
+        step_done("Git branch", nil, string.format("branch %s", mode))
+      end
+    end)
+  end)
+end
+
+---Yank issue key to clipboard
+---@param issue_key string
+---@param step_done fun(step_name: string, err: string?, success_msg: string?)
+local function do_yank_step(issue_key, step_done)
+  vim.schedule(function()
+    vim.fn.setreg(CLIPBOARD_REG, issue_key)
+    vim.fn.setreg(DEFAULT_REG, issue_key)
+    step_done("Yank", nil, "copied to clipboard")
+  end)
 end
 
 ---Start work on issue (assign, sprint, transition, git branch, yank)
 ---@param picker snacks.Picker?
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action?
+---@diagnostic disable-next-line: unused-local
 function M.action_jira_start_work(picker, item, action)
-  if not validate_item_key(item) then
-    return
-  end
-
   local config = require("jira.config").options
   local transition = config.action.start_work.transition
 
@@ -117,114 +189,38 @@ function M.action_jira_start_work(picker, item, action)
         vim.notify(string.format("Started working on %s", item.key), vim.log.levels.INFO)
       end
 
-      clear_issue_caches(item.key)
+      cache.clear_issue_caches(item.key)
       if picker then
         picker:refresh()
       end
     end
   end
 
-  -- Step 1: Assign to current user
   if steps.assign then
-    cli.get_current_user({
-      error_msg = false,
-      on_success = function(result)
-        local me = vim.trim(result.stdout or "")
-        cli.assign_issue(item.key, me, {
-          error_msg = false,
-          on_success = function()
-            step_done("Assign", nil, "assigned to you")
-          end,
-          on_error = function(err_result)
-            step_done("Assign", err_result.stderr or "Unknown error")
-          end,
-        })
-      end,
-      on_error = function(result)
-        step_done("Assign", result.stderr or "Failed to get current user")
-      end,
-    })
+    do_assign_step(item.key, step_done)
   end
 
-  -- Step 2: Move to active sprint
   if steps.move_to_sprint then
-    get_sprints_cached(function(sprints)
-      if not sprints or #sprints == 0 then
-        step_done("Move to sprint", nil, "skipped (no sprints)")
-        return
-      end
-
-      local active = vim.tbl_filter(function(s)
-        return s.state == "active"
-      end, sprints)
-
-      if #active == 0 then
-        step_done("Move to sprint", nil, "skipped (no active sprint)")
-        return
-      end
-
-      cli.move_issue_to_sprint(item.key, active[1].id, {
-        error_msg = false,
-        on_success = function()
-          step_done("Move to sprint", nil, string.format("moved to %s", active[1].name))
-        end,
-        on_error = function(result)
-          step_done("Move to sprint", result.stderr or "Unknown error")
-        end,
-      })
-    end)
+    do_move_to_sprint_step(item.key, step_done)
   end
 
-  -- Step 3: Transition to configured state
   if steps.transition then
-    cli.transition_issue(item.key, transition, {
-      error_msg = false,
-      on_success = function()
-        step_done("Transition", nil, string.format("transitioned to %s", transition))
-      end,
-      on_error = function(result)
-        step_done("Transition", result.stderr or "Unknown error")
-      end,
-    })
+    do_transition_step(item.key, transition, step_done)
   end
 
-  -- Step 4: Git branch
   if steps.git_branch then
-    if not git.is_git_repo() then
-      step_done("Git branch", nil, "skipped (not in git repo)")
-    else
-      local suggested_branch = generate_branch_name(item.key, item.summary)
-      vim.ui.input({
-        prompt = "Branch name: ",
-        default = suggested_branch,
-      }, function(branch_name)
-        if not branch_name or branch_name == "" then
-          step_done("Git branch", nil, "skipped (cancelled)")
-          return
-        end
-        git.switch_branch(branch_name, function(err, mode)
-          if err then
-            step_done("Git branch", err)
-          else
-            step_done("Git branch", nil, string.format("branch %s", mode))
-          end
-        end)
-      end)
-    end
+    do_git_branch_step(item.key, item.summary, step_done)
   end
 
-  -- Step 5: Yank issue key
   if steps.yank then
-    vim.schedule(function()
-      vim.fn.setreg(CLIPBOARD_REG, item.key)
-      vim.fn.setreg(DEFAULT_REG, item.key)
-      step_done("Yank", nil, "copied to clipboard")
-    end)
+    do_yank_step(item.key, step_done)
   end
 end
 
--- Expose private functions for testing
-M._sanitize_for_branch = sanitize_for_branch
-M._generate_branch_name = generate_branch_name
+---Start work on issue (standalone function for command use)
+---@param issue_key string
+function M.start_work_on_issue(issue_key)
+  M.action_jira_start_work(nil, { key = issue_key }, nil)
+end
 
 return M

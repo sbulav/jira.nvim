@@ -10,9 +10,11 @@
 local cli = require("jira.cli")
 local ui = require("jira.picker.ui")
 
+local M = {}
+
 ---Get issue types with caching
 ---@param callback fun(transitions: string[]?)
-local function get_issue_types_cached(callback)
+local function get_issue_types(callback)
   local cache = require("jira.cache")
 
   local cached = cache.get(cache.keys.ISSUE_TYPES, nil)
@@ -29,14 +31,13 @@ local function get_issue_types_cached(callback)
   end)
 end
 
-local M = {}
-
 ---Show epic selection UI using Snacks picker
 ---@param callback fun(epic_key: string?)
 local function show_epic_select(callback)
   local sources = require("jira.picker.sources")
 
   require("snacks").picker(sources.source_jira_epics, {
+    ---@diagnostic disable-next-line: unused-local
     confirm = function(epic_picker, epic_item, action)
       epic_picker:close()
 
@@ -50,19 +51,30 @@ local function show_epic_select(callback)
   })
 end
 
----Get sprints with caching (imported from actions module)
+---Get sprints with caching
 ---@param callback fun(sprints: table[]?)
-local function get_sprints_cached(callback)
-  -- Import dynamically to avoid circular dependency
-  local actions = require("jira.picker.actions")
-  actions.get_sprints_cached(callback)
+local function get_sprints(callback)
+  local cache = require("jira.cache")
+
+  local cached = cache.get(cache.keys.SPRINTS)
+  if cached and cached.items then
+    callback(cached.items)
+    return
+  end
+
+  cli.get_sprints(function(sprints)
+    if sprints and #sprints > 0 then
+      cache.set(cache.keys.SPRINTS, nil, sprints)
+    end
+    callback(sprints)
+  end)
 end
 
 ---Step 1: Select issue type
 ---@param state CreateIssueState
 ---@param on_complete fun(state: CreateIssueState)
 local function step_1_select_type(state, on_complete)
-  get_issue_types_cached(function(issue_types)
+  get_issue_types(function(issue_types)
     vim.ui.select(issue_types, {
       prompt = "Select issue type:",
     }, function(selected_type)
@@ -107,84 +119,86 @@ end
 ---@param state CreateIssueState
 ---@param on_complete fun(state: CreateIssueState)
 local function step_4_select_epic(state, on_complete)
-  vim.ui.select({ "Yes", "No" }, {
-    prompt = "Associate to an epic?",
-  }, function(epic_choice)
-    if not epic_choice then
-      if state.scratch_win then
-        state.scratch_win:close()
+  vim.ui.select(
+    { "Yes", "No" },
+    { prompt = "Associate to an epic?" },
+    function(epic_choice)
+      if not epic_choice then
+        if state.scratch_win then
+          state.scratch_win:close()
+        end
+        return -- User cancelled
       end
-      return -- User cancelled
-    end
 
-    if epic_choice == "Yes" then
-      show_epic_select(function(epic_key)
-        state.parent_key = epic_key
+      if epic_choice == "Yes" then
+        show_epic_select(function(epic_key)
+          state.parent_key = epic_key
+          on_complete(state)
+        end)
+      else
+        state.parent_key = nil
         on_complete(state)
-      end)
-    else
-      state.parent_key = nil
-      on_complete(state)
-    end
-  end)
+      end
+    end)
 end
 
 ---Step 5: Select sprint (optional)
 ---@param state CreateIssueState
 ---@param on_complete fun(state: CreateIssueState)
 local function step_5_select_sprint(state, on_complete)
-  vim.ui.select({ "Yes", "No" }, {
-    prompt = "Move to active sprint?",
-  }, function(sprint_choice)
-    if not sprint_choice then
-      if state.scratch_win then
-        state.scratch_win:close()
+  vim.ui.select(
+    { "Yes", "No" },
+    { prompt = "Move to active sprint?" },
+    function(sprint_choice)
+      if not sprint_choice then
+        if state.scratch_win then
+          state.scratch_win:close()
+        end
+        return -- User cancelled
       end
-      return -- User cancelled
-    end
 
-    if sprint_choice == "Yes" then
-      get_sprints_cached(function(sprints)
-        if not sprints or #sprints == 0 then
-          vim.notify("No sprints available, creating issue without sprint", vim.log.levels.WARN)
-          state.sprint_id = nil
-          on_complete(state)
-          return
-        end
-
-        -- Filter for active + future
-        local available = vim.tbl_filter(function(s)
-          return s.state == "active" or s.state == "future"
-        end, sprints)
-
-        if #available == 0 then
-          vim.notify("No active/future sprints available", vim.log.levels.WARN)
-          state.sprint_id = nil
-          on_complete(state)
-          return
-        end
-
-        -- Extract display strings
-        local sprint_displays = vim.tbl_map(function(s)
-          return s.display
-        end, available)
-
-        vim.ui.select(sprint_displays, {
-          prompt = "Select sprint:",
-        }, function(choice, idx)
-          if choice and idx then
-            state.sprint_id = available[idx].id
-          else
+      if sprint_choice == "Yes" then
+        get_sprints(function(sprints)
+          if not sprints or #sprints == 0 then
+            vim.notify("No sprints available, creating issue without sprint", vim.log.levels.WARN)
             state.sprint_id = nil
+            on_complete(state)
+            return
           end
-          on_complete(state)
+
+          -- Filter for active + future
+          local available = vim.tbl_filter(function(s)
+            return s.state == "active" or s.state == "future"
+          end, sprints)
+
+          if #available == 0 then
+            vim.notify("No active/future sprints available", vim.log.levels.WARN)
+            state.sprint_id = nil
+            on_complete(state)
+            return
+          end
+
+          -- Extract display strings
+          local sprint_displays = vim.tbl_map(function(s)
+            return s.display
+          end, available)
+
+          vim.ui.select(sprint_displays, {
+            prompt = "Select sprint:",
+          }, function(choice, idx)
+            if choice and idx then
+              state.sprint_id = available[idx].id
+            else
+              state.sprint_id = nil
+            end
+            on_complete(state)
+          end)
         end)
-      end)
-    else
-      state.sprint_id = nil
-      on_complete(state)
-    end
-  end)
+      else
+        state.sprint_id = nil
+        on_complete(state)
+      end
+    end)
 end
 
 ---Step 6: Create issue and open in buffer
@@ -223,7 +237,9 @@ end
 ---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 ---@param action snacks.picker.Action
-function M.action_jira_create(picker, item, action)
+---@diagnostic disable-next-line: unused-local
+function M.action_jira_create_issue(picker, item, action)
+  ---@type CreateIssueState
   local state = {
     type = nil,
     summary = nil,

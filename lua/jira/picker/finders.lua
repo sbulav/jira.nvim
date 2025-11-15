@@ -238,9 +238,7 @@ end
 ---@param opts snacks.picker.finder_opts Options passed to the finder
 ---@param ctx snacks.picker.finder_context Context for the finder
 function M.get_actions(opts, ctx)
-  local item = opts.item or (ctx.ctx and ctx.ctx.item) or ctx.item
-
-  local actions = require("jira.picker.actions").get_jira_actions(item, ctx)
+  local actions = require("jira.picker.actions").get_jira_actions()
 
   local items = {}
   for name, action_def in pairs(actions) do

@@ -30,39 +30,6 @@ local function source_jira_issues()
   }
 end
 
----Builds the configuration for the JIRA epic issues picker.
----@param epic_key string? the epic key
----@return snacks.picker.source The configuration for the JIRA epic issues picker
-function M.source_jira_epic_issues(epic_key)
-  local config = require("jira.config").options
-  local keymaps = config.keymaps
-
-  return {
-    title = "JIRA Epic Issues",
-    layout = config.layout.epic_issues,
-    finder = function(opts, ctx)
-      return require("jira.picker.finders").get_jira_epic_issues(epic_key, opts, ctx)
-    end,
-    format = "format_jira_issues",
-    preview = "preview_jira_issue",
-    confirm = "action_jira_list_actions",
-    pattern = config.cli.epic_issues.prefill_search,
-
-    win = {
-      input = {
-        title = string.format("JIRA Epic Issues (%s)", epic_key or ""),
-        keys = keymaps.input,
-      },
-      list = {
-        keys = keymaps.list,
-      },
-      preview = {
-        keys = keymaps.preview,
-      },
-    },
-  }
-end
-
 ---Builds the configuration for the JIRA epics picker.
 ---@return snacks.picker.source The configuration for the JIRA epics picker
 local function source_jira_epics()
@@ -80,7 +47,7 @@ local function source_jira_epics()
       picker:close()
       if item and item.key then
         vim.schedule(function()
-          require("snacks").picker(M.source_jira_epic_issues(item.key))
+          require("snacks").picker(M.jira_epic_issues(item.key))
         end)
       end
     end,
@@ -114,6 +81,39 @@ local function source_jira_sprints()
     main = { current = true },
     finder = finders.get_sprints,
     format = "format_jira_sprint",
+  }
+end
+
+---Builds the configuration for the JIRA epic issues picker.
+---@param epic_key string? the epic key
+---@return snacks.picker.source The configuration for the JIRA epic issues picker
+function M.jira_epic_issues(epic_key)
+  local config = require("jira.config").options
+  local keymaps = config.keymaps
+
+  return {
+    title = "JIRA Epic Issues",
+    layout = config.layout.epic_issues,
+    finder = function(opts, ctx)
+      return require("jira.picker.finders").get_jira_epic_issues(epic_key, opts, ctx)
+    end,
+    format = "format_jira_issues",
+    preview = "preview_jira_issue",
+    confirm = "action_jira_list_actions",
+    pattern = config.cli.epic_issues.prefill_search,
+
+    win = {
+      input = {
+        title = string.format("JIRA Epic Issues (%s)", epic_key or ""),
+        keys = keymaps.input,
+      },
+      list = {
+        keys = keymaps.list,
+      },
+      preview = {
+        keys = keymaps.preview,
+      },
+    },
   }
 end
 

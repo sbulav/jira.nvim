@@ -47,7 +47,7 @@ function M.open_jira_epic(opts)
   if epic_key then
     -- Open issues picker for specific epic
     local sources = require("jira.picker.sources")
-    return require("snacks").picker(sources.source_jira_epic_issues(epic_key))
+    return require("snacks").picker(sources.jira_epic_issues(epic_key))
   else
     -- Open epic picker (which will chain to issues picker on selection)
     return require("snacks").picker("source_jira_epics")
@@ -65,7 +65,7 @@ function M.start_working_on(opts)
     return
   end
 
-  local actions = require("jira.picker.actions")
+  local actions = require("jira.picker.actions.start_work")
   actions.start_work_on_issue(issue_key)
 end
 

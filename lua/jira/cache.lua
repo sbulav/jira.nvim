@@ -204,6 +204,14 @@ function M.set(query_type, params, items)
   insert:close()
 end
 
+---Clear issue-related caches
+---@param issue_key string
+function M.clear_issue_caches(issue_key)
+  M.clear(M.keys.ISSUE_VIEW, { key = issue_key })
+  M.clear(M.keys.ISSUES)
+  M.clear(M.keys.EPIC_ISSUES)
+end
+
 ---Close the database connection
 function M.close()
   if db then
