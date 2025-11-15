@@ -264,6 +264,7 @@ function M.get_actions(opts, ctx)
     for i = 1, #items do
       local it = items[i]
       it.idx = i
+      it.text = string.format("%d. %s %s", i, it.action.icon or "", it.action.name)
       cb(it)
     end
   end

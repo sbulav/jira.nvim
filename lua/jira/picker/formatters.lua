@@ -69,18 +69,20 @@ function M.format_jira_action(item, picker)
   local config = require("jira.config").options
   local action_hl = config.ui.action_highlights
 
-  -- Extract icon from the beginning of text (emoji followed by space)
-  local icon, desc = item.text:match("^([^%s]+)%s(.+)$")
+  -- Extract index, icon, and description from text: "1. 🌐 Open issue in browser"
+  local idx, icon, desc = item.text:match("^(%d+)%.%s*([^%s]+)%s(.+)$")
 
-  if icon then
-    table.insert(ret, { icon .. "  ", action_hl.icon })
-  else
-    desc = item.text
+  if not idx then
+    -- Fallback if pattern doesn't match
+    table.insert(ret, { item.text, action_hl.description })
+    return ret
   end
+
+  -- Icon
+  table.insert(ret, { icon .. "  ", action_hl.icon })
 
   -- Calculate dynamic padding for index
   local count = picker:count()
-  local idx = tostring(item.idx)
   local padded_idx = (" "):rep(#tostring(count) - #idx) .. idx
   table.insert(ret, { padded_idx .. ".", action_hl.number })
 
