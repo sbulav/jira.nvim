@@ -56,6 +56,11 @@ local metadata = {
     icon = "󱐋 ",
     priority = 48,
   },
+  remove_from_epic = {
+    name = "Remove issue from epic",
+    icon = "󱐋 ",
+    priority = 46,
+  },
   edit_summary = {
     name = "Edit summary/title",
     icon = "󰏫 ",

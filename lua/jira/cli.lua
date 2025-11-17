@@ -548,6 +548,20 @@ function M.add_issue_to_epic(epic_key, issue_key, opts)
   M.execute(_build_epic_add_args(epic_key, issue_key), opts)
 end
 
+---Build args for removing issue from epic
+---@param issue_key string Issue key
+---@return table args CLI arguments
+local function _build_epic_remove_args(issue_key)
+  return { "epic", "remove", issue_key }
+end
+
+---Remove issue from epic
+---@param issue_key string Issue key
+---@param opts table? Options for execute (success_msg, error_msg, callbacks)
+function M.remove_issue_from_epic(issue_key, opts)
+  M.execute(_build_epic_remove_args(issue_key), opts)
+end
+
 ---Build args for creating issue
 ---@param issue_type string Type (Bug, Story, Task, Epic, etc.)
 ---@param summary string Issue title

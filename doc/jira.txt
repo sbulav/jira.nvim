@@ -538,9 +538,11 @@ When you press <CR> on an issue, the following actions are available:
 8. Unassign                 Remove the assignee
 9. Create issue             Create a new JIRA issue (see below)
 10. Move issue to sprint    Move the issue to a sprint
-11. Edit summary            Edit the issue title
-12. Edit description        Edit the issue description (markdown editor)
-13. Add comment             Add a comment (markdown editor)
+11. Add issue to epic       Link the issue to a parent epic
+12. Remove issue from epic  Unlink the issue from its epic
+13. Edit summary            Edit the issue title
+14. Edit description        Edit the issue description (markdown editor)
+15. Add comment             Add a comment (markdown editor)
 
 Action-specific keymaps are also available for quick access without opening
 the actions menu. See |jira-default-keymaps|.
