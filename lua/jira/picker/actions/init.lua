@@ -51,6 +51,11 @@ local metadata = {
     icon = " ",
     priority = 50,
   },
+  add_to_epic = {
+    name = "Add issue to epic",
+    icon = "󱐋 ",
+    priority = 48,
+  },
   edit_summary = {
     name = "Edit summary/title",
     icon = "󰏫 ",
