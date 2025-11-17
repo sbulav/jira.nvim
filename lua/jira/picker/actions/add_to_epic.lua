@@ -31,6 +31,11 @@ function M.action_jira_add_to_epic(picker, item, action)
       })
     end,
   })
+  -- For some reason, it's starting on normal mode (maybe because it's in another floating window?).
+  -- So forcing making it on insert mode.
+  vim.schedule(function()
+    vim.cmd("startinsert!")
+  end)
 end
 
 return M

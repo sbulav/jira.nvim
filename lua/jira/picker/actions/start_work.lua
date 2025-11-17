@@ -122,6 +122,12 @@ local function do_git_branch_step(issue_key, summary, step_done)
       end
     end)
   end)
+
+  -- For some reason, it's starting on normal mode (maybe because it's in another floating window?).
+  -- So forcing making it on insert mode.
+  vim.schedule(function()
+    vim.cmd("startinsert!")
+  end)
 end
 
 ---Yank issue key to clipboard
