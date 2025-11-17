@@ -5,8 +5,9 @@ local M = {}
 ---Helper function to display the result
 ---@param ctx snacks.picker.preview.ctx
 ---@param result snacks.picker.preview.result
+---@param issue_key string
 ---@param epic jira.Epic? Optional epic info
-local function display_result(ctx, result, epic)
+local function display_result(ctx, result, issue_key, epic)
   if not ctx.preview.win:buf_valid() then
     return
   end
@@ -19,7 +20,7 @@ local function display_result(ctx, result, epic)
   end
 
   local markdown = require("jira.markdown")
-  local lines = markdown.format_issue(result.stdout or "", epic)
+  local lines = markdown.format_issue(result.stdout or "", issue_key, epic)
 
   -- Set preview content
   ctx.preview:reset()
@@ -54,7 +55,7 @@ function M.preview_jira_issue(ctx)
   ctx.preview:notify("Loading issue details...", "info")
 
   fetchers.fetch_issue(item.key, function(result, epic)
-    display_result(ctx, result, epic)
+    display_result(ctx, result, item.key, epic)
   end)
 end
 

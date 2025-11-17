@@ -28,7 +28,7 @@ function M.new(buf, issue_key)
   M.attached[buf] = self
 
   vim.schedule(function()
-    self:render()
+    self:render(issue_key)
   end)
 
   return self
@@ -55,28 +55,27 @@ function M:keys()
   end, { buffer = self.buf, desc = "Close buffer" })
 end
 
----@param opts? {force?:boolean}
-function M:render(opts)
+---@param issue_key string
+function M:render(issue_key)
   if not self:valid() then
     return
   end
 
-  opts = opts or {}
-
   fetchers.fetch_issue(self.issue_key, function(result, epic)
-    self:set_content(result, epic)
+    self:set_content(result, issue_key, epic)
   end)
 end
 
 ---@param result table
+---@param issue_key string
 ---@param epic jira.Epic?
-function M:set_content(result, epic)
+function M:set_content(result, issue_key, epic)
   if not self:valid() then
     return
   end
 
   local markdown = require("jira.markdown")
-  local lines = markdown.format_issue(result.stdout or "", epic)
+  local lines = markdown.format_issue(result.stdout or "", issue_key, epic)
 
   vim.bo[self.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
@@ -98,7 +97,7 @@ function M.attach(buf, issue_key)
   M.setup()
   local ret = M.attached[buf]
   if ret then
-    ret:render({ force = true })
+    ret:render(issue_key)
     return ret
   end
   return M.new(buf, issue_key)

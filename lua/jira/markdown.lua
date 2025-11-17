@@ -110,6 +110,44 @@ local function format_section_header(section)
   return "## " .. emoji .. section, is_comments, is_linked_issues
 end
 
+---Extract assignee from metadata
+---@param metadata string
+---@return string?
+local function extract_assignee(metadata)
+  local after = metadata:match("👷%s*(.+)")
+  if not after then
+    return nil
+  end
+
+  local stop_pos = #after + 1
+  local emojis = { "🔑", "💭", "🧵", "⏱️", "🔎", "🚀", "📦", "🏷️", "👀", "⭐", "🚧", "⌛" }
+  for _, emoji in ipairs(emojis) do
+    local p = after:find(emoji, 1, true)
+    if p and p < stop_pos then
+      stop_pos = p
+    end
+  end
+
+  if stop_pos <= #after then
+    after = after:sub(1, stop_pos - 1)
+  end
+
+  return (after:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+---Build formatted title line
+---@param title_line string?
+---@param issue_key string?
+---@return string?
+local function build_title(title_line, issue_key)
+  if not title_line or not issue_key then
+    return title_line
+  end
+
+  local raw = title_line:match("^#%s*(.+)$") or title_line
+  return "# [" .. issue_key .. "] > " .. raw
+end
+
 ---Process header section (metadata and title)
 ---@param lines string[]
 ---@param i number Current line index
@@ -147,9 +185,10 @@ end
 
 ---Transform plain text output to markdown format
 ---@param lines string[]
+---@param issue_key string
 ---@param epic jira.Epic? Optional epic info
 ---@return string[]
-local function plain_to_markdown(lines, epic)
+local function plain_to_markdown(lines, issue_key, epic)
   local result = {}
   local in_code_block = false
   local metadata_lines = {}
@@ -157,6 +196,7 @@ local function plain_to_markdown(lines, epic)
   local in_header = true
   local in_comments_section = false
   local first_comment = true
+  local final_metadata_line = nil
   local in_linked_issues_section = false
 
   for i, line in ipairs(lines) do
@@ -168,20 +208,38 @@ local function plain_to_markdown(lines, epic)
       goto continue
     end
 
-    -- If we just exited header, add title and metadata to result
+    -- If we just exited header, add structured header (title / epic / assignee)
     if not in_header and i <= 15 and (title_line or #metadata_lines > 0) then
-      if title_line then
-        table.insert(result, title_line)
-        table.insert(result, "")
-        title_line = nil  -- Clear to prevent re-adding
-      end
+      local metadata_concat = nil
       if #metadata_lines > 0 then
-        if epic then
-          table.insert(metadata_lines, "🎯 Epic: " .. epic.key .. " - " .. epic.summary)
-        end
-        table.insert(result, table.concat(metadata_lines, " "))
-        metadata_lines = {}  -- Clear to prevent re-adding
+        metadata_concat = table.concat(metadata_lines, " ")
       end
+
+      local formatted_title = build_title(title_line, issue_key) or title_line
+
+      if formatted_title then
+        table.insert(result, formatted_title)
+        table.insert(result, "")
+      end
+
+      if epic then
+        table.insert(result, string.format("⚡ [%s] > %s", epic.key, epic.summary))
+      end
+
+      if metadata_concat then
+        local assignee = extract_assignee(metadata_concat)
+        if assignee and assignee ~= "" then
+          table.insert(result, "👷 " .. assignee)
+        end
+      end
+
+      if #result > 0 then
+        table.insert(result, "")
+      end
+
+      title_line = nil
+      metadata_lines = {}
+      final_metadata_line = metadata_concat
     end
 
     -- Convert dashed section headers to markdown headers
@@ -283,6 +341,15 @@ local function plain_to_markdown(lines, epic)
     table.insert(result, "```")
   end
 
+  -- Append original metadata as footer
+  if final_metadata_line and final_metadata_line ~= "" then
+    if #result > 0 and result[#result] ~= "" then
+      table.insert(result, "")
+    end
+    table.insert(result, "---")
+    table.insert(result, final_metadata_line)
+  end
+
   return result
 end
 
@@ -335,15 +402,16 @@ end
 
 ---Convert JIRA issue plain text to markdown
 ---@param text string Plain text with ANSI codes
+---@param issue_key string the issue key
 ---@param epic jira.Epic? Optional epic info
 ---@return string[] Markdown formatted lines
-function M.format_issue(text, epic)
+function M.format_issue(text, issue_key, epic)
   -- Strip ANSI codes and split into lines
   local clean_text = strip_ansi_codes(text)
   local lines = vim.split(clean_text, "\n", { trimempty = false })
 
   -- Transform to markdown
-  return plain_to_markdown(lines, epic)
+  return plain_to_markdown(lines, issue_key, epic)
 end
 
 -- Export test helpers
