@@ -164,33 +164,21 @@ local function step_5_select_sprint(state, on_complete)
             return
           end
 
-          -- Filter for active + future
-          local available = vim.tbl_filter(function(s)
-            return s.state == "active" or s.state == "future"
-          end, sprints)
+          require("snacks").picker("source_jira_sprints", {
+            sprints = sprints,
+            ---@diagnostic disable-next-line: unused-local
+            confirm = function(sprint_picker, sprint_item, action)
+              sprint_picker:close()
 
-          if #available == 0 then
-            vim.notify("No active/future sprints available", vim.log.levels.WARN)
-            state.sprint_id = nil
-            on_complete(state)
-            return
-          end
+              if not sprint_item or not sprint_item.sprint then
+                state.sprint_id = nil
+              else
+                state.sprint_id = sprint_item.sprint.id
+              end
 
-          -- Extract display strings
-          local sprint_displays = vim.tbl_map(function(s)
-            return s.display
-          end, available)
-
-          vim.ui.select(sprint_displays, {
-            prompt = "Select sprint:",
-          }, function(choice, idx)
-            if choice and idx then
-              state.sprint_id = available[idx].id
-            else
-              state.sprint_id = nil
-            end
-            on_complete(state)
-          end)
+              on_complete(state)
+            end,
+          })
         end)
       else
         state.sprint_id = nil
