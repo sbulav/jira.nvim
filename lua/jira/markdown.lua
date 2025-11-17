@@ -147,8 +147,9 @@ end
 
 ---Transform plain text output to markdown format
 ---@param lines string[]
+---@param epic jira.Epic? Optional epic info
 ---@return string[]
-local function plain_to_markdown(lines)
+local function plain_to_markdown(lines, epic)
   local result = {}
   local in_code_block = false
   local metadata_lines = {}
@@ -175,6 +176,9 @@ local function plain_to_markdown(lines)
         title_line = nil  -- Clear to prevent re-adding
       end
       if #metadata_lines > 0 then
+        if epic then
+          table.insert(metadata_lines, "🎯 Epic: " .. epic.key .. " - " .. epic.summary)
+        end
         table.insert(result, table.concat(metadata_lines, " "))
         metadata_lines = {}  -- Clear to prevent re-adding
       end
@@ -331,14 +335,15 @@ end
 
 ---Convert JIRA issue plain text to markdown
 ---@param text string Plain text with ANSI codes
+---@param epic jira.Epic? Optional epic info
 ---@return string[] Markdown formatted lines
-function M.format_issue(text)
+function M.format_issue(text, epic)
   -- Strip ANSI codes and split into lines
   local clean_text = strip_ansi_codes(text)
   local lines = vim.split(clean_text, "\n", { trimempty = false })
 
   -- Transform to markdown
-  return plain_to_markdown(lines)
+  return plain_to_markdown(lines, epic)
 end
 
 -- Export test helpers

@@ -69,3 +69,7 @@
 ---@field keymaps jira.Keymaps Custom keymaps
 ---@field cache jira.CacheConfig Cache settings
 ---@field debug boolean Enable debug mode to print CLI commands
+
+---@class jira.Epic
+---@field key string Epic key (e.g., "PROJ-123")
+---@field summary string Epic summary/title

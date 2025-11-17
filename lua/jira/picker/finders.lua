@@ -81,18 +81,11 @@ end
 ---@return snacks.picker.finder
 local function with_cache(cache_key, cache_params, finder_fn)
   return function(opts, ctx)
-    local config = require("jira.config").options
     local cache = require("jira.cache")
 
-    -- Check if we should use cache
-    local use_cache = config.cache.enabled
-
-    -- Try to get from cache first
-    if use_cache then
-      local cached = cache.get(cache_key, cache_params)
-      if cached and cached.items then
-        return ctx.filter:filter(cached.items)
-      end
+    local cached = cache.get(cache_key, cache_params)
+    if cached and cached.items then
+      return ctx.filter:filter(cached.items)
     end
 
     -- Cache miss or skipped, fetch from source and cache results
@@ -114,7 +107,7 @@ local function with_cache(cache_key, cache_params, finder_fn)
 
       -- Schedule caching after event loop (when streaming is done)
       vim.schedule(function()
-        if not proc_done and #items > 0 and use_cache then
+        if not proc_done and #items > 0 then
           proc_done = true
           cache.set(cache_key, cache_params, items)
         end

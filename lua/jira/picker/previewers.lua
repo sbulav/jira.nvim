@@ -1,9 +1,12 @@
+local issue = require("jira.issue")
+
 local M = {}
 
--- Helper function to display the result
+---Helper function to display the result
 ---@param ctx snacks.picker.preview.ctx
 ---@param result snacks.picker.preview.result
-local function display_result(ctx, result)
+---@param epic jira.Epic? Optional epic info
+local function display_result(ctx, result, epic)
   if not ctx.preview.win:buf_valid() then
     return
   end
@@ -16,7 +19,7 @@ local function display_result(ctx, result)
   end
 
   local markdown = require("jira.markdown")
-  local lines = markdown.format_issue(result.stdout or "")
+  local lines = markdown.format_issue(result.stdout or "", epic)
 
   -- Set preview content
   ctx.preview:reset()
@@ -46,30 +49,12 @@ function M.preview_jira_issue(ctx)
     return
   end
 
-  local config = require("jira.config").options
-  local cli = require("jira.cli")
-  local cache = require("jira.cache")
-
   ctx.preview:reset()
   ctx.preview:set_title(item.key)
   ctx.preview:notify("Loading issue details...", "info")
 
-  if config.cache.enabled then
-    local cached = cache.get(cache.keys.ISSUE_VIEW, { key = item.key })
-    if cached and cached.items then
-      vim.schedule(function()
-        display_result(ctx, cached.items)
-      end)
-      return
-    end
-  end
-
-  cli.view_issue(item.key, config.preview.nb_comments, function(result)
-    if config.cache.enabled then
-      cache.set(cache.keys.ISSUE_VIEW, { key = item.key }, result)
-    end
-
-    display_result(ctx, result)
+  issue.fetch(item.key, function(result, epic_info)
+    display_result(ctx, result, epic_info)
   end)
 end
 

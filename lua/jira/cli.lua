@@ -428,6 +428,41 @@ function M.get_issue_description(key, callback)
   end)
 end
 
+---Get issue epic
+---@param key string Issue key
+---@param callback fun(epic: jira.Epic?) Callback with epic or nil if no epic
+function M.get_issue_epic(key, callback)
+  local config = require("jira.config").options
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, _build_issue_view_raw_args(key))
+
+  vim.system(cmd, { text = true }, function(result)
+    vim.schedule(function()
+      if result.code ~= 0 then
+        callback(nil)
+        return
+      end
+
+      -- Parse JSON to extract parent (epic)
+      local ok, data = pcall(vim.json.decode, result.stdout)
+      if not ok or not data or not data.fields or not data.fields.parent then
+        callback(nil)
+        return
+      end
+
+      local parent = data.fields.parent
+      if parent.key and parent.fields and parent.fields.summary then
+        callback({
+          key = parent.key,
+          summary = parent.fields.summary,
+        })
+      else
+        callback(nil)
+      end
+    end)
+  end)
+end
+
 ---Edit issue description
 ---@param key string Issue key
 ---@param description string New description

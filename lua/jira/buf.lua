@@ -1,3 +1,5 @@
+local issue = require("jira.issue")
+
 ---@class jira.Buf
 ---@field buf number
 ---@field issue_key string
@@ -60,40 +62,21 @@ function M:render(opts)
   end
 
   opts = opts or {}
-  local cli = require("jira.cli")
-  local cache = require("jira.cache")
-  local config = require("jira.config").options
 
-  -- Try cache first (unless force refresh)
-  if not opts.force and config.cache.enabled then
-    local cached = cache.get(cache.keys.ISSUE_VIEW, { key = self.issue_key })
-    if cached and cached.items then
-      self:set_content(cached.items)
-      return
-    end
-  end
-
-  cli.view_issue(self.issue_key, config.preview.nb_comments, function(result)
-    if result.code ~= 0 then
-      vim.notify("Failed to load issue: " .. self.issue_key, vim.log.levels.ERROR)
-      return
-    end
-
-    if config.cache.enabled then
-      cache.set(cache.keys.ISSUE_VIEW, { key = self.issue_key }, result)
-    end
-
-    self:set_content(result)
+  issue.fetch(self.issue_key, function(result, epic_info)
+    self:set_content(result, epic_info)
   end)
 end
 
-function M:set_content(result)
+---@param result table
+---@param epic jira.Epic?
+function M:set_content(result, epic)
   if not self:valid() then
     return
   end
 
   local markdown = require("jira.markdown")
-  local lines = markdown.format_issue(result.stdout or "")
+  local lines = markdown.format_issue(result.stdout or "", epic)
 
   vim.bo[self.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)

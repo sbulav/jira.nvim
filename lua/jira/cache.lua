@@ -208,6 +208,7 @@ end
 ---@param issue_key string
 function M.clear_issue_caches(issue_key)
   M.clear(M.keys.ISSUE_VIEW, { key = issue_key })
+  M.clear(M.keys.ISSUE_EPIC, { key = issue_key })
   M.clear(M.keys.ISSUES)
   M.clear(M.keys.EPIC_ISSUES)
 end
@@ -232,6 +233,7 @@ M.keys = {
   EPICS = "epics",
   EPIC_ISSUES = "epic_issues",
   ISSUE_VIEW = "issue_view",
+  ISSUE_EPIC = "issue_epic",
   TRANSITIONS = "transitions",
   SPRINTS = "sprints",
   ISSUE_TYPES = "issue_types",
