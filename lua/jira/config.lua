@@ -149,10 +149,12 @@ local defaults = {
     -- Keymaps on Snacks list window
     list = {
       ["<CR>"] = "action_jira_list_actions",
-      ["y"] = "action_jira_copy_key",
-      ["gt"] = "action_jira_transition",
-      ["gc"] = "action_jira_add_comment",
-      ["<M-r>"] = "action_jira_refresh_cache",
+      ["<M-y>"] = "action_jira_copy_key",
+      ["<M-t>"] = "action_jira_transition",
+      ["<M-c>"] = "action_jira_add_comment",
+      ["<M-s>"] = "action_jira_edit_summary",
+      ["<M-d>"] = "action_jira_edit_description",
+      ["<M-b>"] = "action_jira_open_in_browser",
     },
     -- Keymaps on Snacks preview window
     preview = {
