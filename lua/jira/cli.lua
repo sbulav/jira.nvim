@@ -490,7 +490,29 @@ local function _get_interactive_options(args, callback)
   local stdout_chunks = {}
   local cmd = { config.cli.cmd }
   vim.list_extend(cmd, args)
-  local job_id = vim.fn.jobstart(cmd, {
+
+  local scroll_started = false
+  local job_id
+
+  -- Scroll through options and schedule job termination
+  local function scroll_and_kill()
+    if scroll_started then
+      return
+    end
+    scroll_started = true
+
+    -- 30 was chosen empiricaly.
+    -- If you have more than 30 possible transitions/issue types, you have a process problem.
+    for _ = 1, 30 do
+      vim.fn.chansend(job_id, "\27[B") -- Down arrow
+    end
+    -- Give it time to render, then kill
+    vim.defer_fn(function()
+      vim.fn.jobstop(job_id)
+    end, config.cli.timeout.interactive_render)
+  end
+
+  job_id = vim.fn.jobstart(cmd, {
     stdout_buffered = false,
     pty = true,
     on_stdout = function(_, data, _)
@@ -531,16 +553,15 @@ local function _get_interactive_options(args, callback)
     return
   end
 
-  -- Wait for prompt to render, then scroll through all options
-  vim.defer_fn(function()
-    for _ = 1, 20 do
-      vim.fn.chansend(job_id, "\27[B") -- Down arrow
-    end
-    -- Give it time to render, then kill
-    vim.defer_fn(function()
-      vim.fn.jobstop(job_id)
-    end, config.cli.timeout.interactive_render)
-  end, config.cli.timeout.interactive_initial)
+  -- Use vim.uv.new_timer for reliable timing instead of vim.defer_fn
+  local timer = vim.uv.new_timer()
+  timer:start(config.cli.timeout.interactive_initial, 0, function()
+    timer:stop()
+    timer:close()
+    vim.schedule(function()
+      scroll_and_kill()
+    end)
+  end)
 end
 
 ---Get available transitions for an issue
