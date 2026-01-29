@@ -41,6 +41,11 @@ local defaults = {
       order_by = "status",
       prefill_search = "",
     },
+
+    -- Method to filter epic issues
+    -- "parent": Use --parent flag (classic Jira, parent-child relationships)
+    -- "epic_link": Use -q flag with JQL "Epic Link"=KEY (Jira Software/next-gen)
+    epic_filter_method = "parent",
   },
 
   -- Layout configuration for pickers

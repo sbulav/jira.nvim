@@ -90,7 +90,11 @@ local function _build_epic_issues_args(epic_key)
 
   local args = vim.deepcopy(config.cli.epic_issues.args)
 
-  vim.list_extend(args, { "-q", string.format('"Epic Link"=%s', epic_key) })
+  if config.cli.epic_filter_method == "epic_link" then
+    vim.list_extend(args, { "-q", string.format('"Epic Link"=%s', epic_key) })
+  else -- default to "parent"
+    vim.list_extend(args, { "--parent", epic_key })
+  end
   vim.list_extend(args, config.cli.epic_issues.filters)
   vim.list_extend(args, { "--order-by", config.cli.epic_issues.order_by })
   vim.list_extend(args, { "--csv", "--columns", table.concat(config.cli.epic_issues.columns, ",") })

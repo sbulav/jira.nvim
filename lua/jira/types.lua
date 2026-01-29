@@ -17,6 +17,7 @@
 ---@field issues jira.QueryConfig Query settings for sprint issues
 ---@field epics jira.QueryConfig Query settings for epics
 ---@field epic_issues jira.QueryConfig Query settings for epic issues
+---@field epic_filter_method? string Method to filter epic issues: "parent" (classic Jira) or "epic_link" (Jira Software/next-gen)
 
 ---@class jira.UIConfig
 ---@field type_icons table<string, string> Icons for issue types

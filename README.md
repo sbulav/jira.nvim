@@ -143,6 +143,19 @@ require("jira").setup({
 })
 ```
 
+### Configure epic relationship type
+
+If your Jira setup uses "Epic Link" custom field instead of parent-child relationships:
+
+```lua
+require("jira").setup({
+  cli = {
+    epic_filter_method = "epic_link", -- Use -q flag with JQL "Epic Link"=KEY
+    -- Default is "parent" for classic Jira parent-child relationships
+  },
+})
+```
+
 ### Add custom keymaps
 
 ```lua
