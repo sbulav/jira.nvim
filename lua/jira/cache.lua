@@ -5,6 +5,22 @@ local db = nil
 ---@class jira.cache
 local M = {}
 
+---Get cache TTL from config
+---@return number TTL in seconds
+local function get_cache_ttl()
+  local config = require("jira.config").options
+  return config.cache.cache_ttl or 300 -- default 5 minutes
+end
+
+---Check if cached data is expired
+---@param timestamp number Unix timestamp when data was cached
+---@return boolean true if expired
+local function is_expired(timestamp)
+  local ttl = get_cache_ttl()
+  local age = os.time() - timestamp
+  return age > ttl
+end
+
 ---Get cache file path from config
 ---@return string
 local function get_cache_path()
@@ -148,14 +164,25 @@ function M.get(query_type, params)
       return nil
     end
 
+    -- Check if cache is expired
+    local expired = is_expired(timestamp)
+    if expired then
+      if config.debug then
+        vim.notify(string.format("[JIRA Cache] EXPIRED - Cache for key %s expired (age: %ds, TTL: %ds)", key, os.time() - timestamp, get_cache_ttl()), vim.log.levels.INFO)
+      end
+      -- Clear expired entry
+      M.clear(query_type, params)
+      return nil
+    end
+
     if config.debug then
-      vim.notify(string.format("[JIRA Cache] HIT - Found %d items (cached at %s)", #items, os.date("%Y-%m-%d %H:%M:%S", timestamp)), vim.log.levels.INFO)
+      vim.notify(string.format("[JIRA Cache] HIT - Found %d items (cached at %s, age: %ds)", #items, os.date("%Y-%m-%d %H:%M:%S", timestamp), os.time() - timestamp), vim.log.levels.INFO)
     end
 
     return {
       items = items,
       timestamp = timestamp,
-      expired = false, -- For now, no expiry logic
+      expired = false,
     }
   end
 

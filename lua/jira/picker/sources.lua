@@ -8,9 +8,15 @@ local function source_jira_issues(issues_opts)
   local keymaps = global_config.keymaps
   local merged_issues = vim.tbl_deep_extend("force", global_config.cli.issues, issues_opts or {})
 
+  -- Get layout config and ensure footer is preserved
+  local layout_config = global_config.layout.issues or {}
+  if type(layout_config) == "function" then
+    layout_config = layout_config()
+  end
+  
   return {
     title = issues_opts and "JIRA Issues (Custom)" or "JIRA Issues",
-    layout = global_config.layout.issues,
+    layout = layout_config,
     finder = function(picker_opts, ctx)
       return require("jira.picker.finders").get_jira_issues(picker_opts, ctx, merged_issues)
     end,
@@ -18,6 +24,7 @@ local function source_jira_issues(issues_opts)
     preview = "preview_jira_issue",
     confirm = "action_jira_list_actions",
     pattern = merged_issues.prefill_search,
+    footer = "<M-r> Refresh | <CR> Actions | <M-t> Transition | <M-c> Comment",
 
     win = {
       input = {
@@ -26,6 +33,7 @@ local function source_jira_issues(issues_opts)
       },
       list = {
         keys = keymaps.list,
+        footer = "<M-r> Refresh | <CR> Actions | <M-t> Transition | <M-c> Comment",
       },
       preview = {
         keys = keymaps.preview,
@@ -47,6 +55,7 @@ local function source_jira_epics()
     finder = finders.get_jira_epics,
     format = "format_jira_epics",
     pattern = config.cli.epics.prefill_search,
+    footer = "<M-r> Refresh | <CR> Open Epic",
     confirm = function(picker, item)
       picker:close()
       if item and item.key then
@@ -55,6 +64,12 @@ local function source_jira_epics()
         end)
       end
     end,
+    
+    win = {
+      list = {
+        footer = "<M-r> Refresh | <CR> Open Epic",
+      },
+    },
   }
 end
 
@@ -105,6 +120,7 @@ function M.jira_epic_issues(epic_key)
     preview = "preview_jira_issue",
     confirm = "action_jira_list_actions",
     pattern = config.cli.epic_issues.prefill_search,
+    footer = "<M-r> Refresh | <CR> Actions | <M-t> Transition | <M-c> Comment",
 
     win = {
       input = {
@@ -113,6 +129,7 @@ function M.jira_epic_issues(epic_key)
       },
       list = {
         keys = keymaps.list,
+        footer = "<M-r> Refresh | <CR> Actions | <M-t> Transition | <M-c> Comment",
       },
       preview = {
         keys = keymaps.preview,

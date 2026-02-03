@@ -308,6 +308,8 @@ configuration:
       cache = {
         -- Enable/disable caching of JIRA query results
         enabled = true,
+        -- Time-to-live for cached data in seconds (default: 300 = 5 minutes)
+        cache_ttl = 300,
         -- Path to cache database (defaults to Neovim data directory)
         -- path = vim.fn.stdpath("data") .. "/jira/cache.sqlite3",
       },
@@ -448,6 +450,13 @@ cache.path                                                 *jira-cache-path*
     Default: `vim.fn.stdpath("data") .. "/jira/cache.sqlite3"`
 
     Custom path for the SQLite cache file.
+
+cache.cache_ttl                                         *jira-cache-ttl*
+    Type: `number`
+    Default: `300`
+
+    Time-to-live for cached data in seconds. After this time, cached data
+    is automatically refreshed when the picker opens. Default is 5 minutes.
 
 debug                                                           *jira-debug*
     Type: `boolean`
@@ -668,6 +677,13 @@ Cache Location~
     Default: `~/.local/share/nvim/jira/cache.sqlite3`
     Customize via |jira-cache-path|
 
+Cache TTL~
+    Default: 300 seconds (5 minutes)
+    Customize via |jira-cache-ttl|
+
+    Cached data automatically expires after the configured TTL. When you
+    open a picker, expired data is automatically refreshed from JIRA.
+
 Cached Data~
     • Sprint issues
     • Epic lists
@@ -676,7 +692,8 @@ Cached Data~
 
 Refresh Cache~
     Press `<M-r>` in any picker mode, or select the refresh action from the
-    actions menu.
+    actions menu. The picker footer shows available keybindings including
+    the refresh shortcut.
 
 Clear Cache~
     Delete the SQLite file:
@@ -689,6 +706,16 @@ Disable Cache~
     require("jira").setup({
       cache = {
         enabled = false,
+      },
+    })
+<
+
+Configure Cache TTL~
+>lua
+    require("jira").setup({
+      cache = {
+        enabled = true,
+        cache_ttl = 600, -- 10 minutes
       },
     })
 <

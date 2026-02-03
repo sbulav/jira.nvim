@@ -181,6 +181,8 @@ local defaults = {
   cache = {
     -- Enable/disable caching of JIRA query results
     enabled = true,
+    -- Time-to-live for cached data in seconds (default: 300 = 5 minutes)
+    cache_ttl = 300,
     -- Path to cache database (defaults to Neovim data directory)
     -- path = vim.fn.stdpath("data") .. "/jira/cache.sqlite3",
   },

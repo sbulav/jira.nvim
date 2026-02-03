@@ -239,6 +239,7 @@ require("jira").setup({
 The plugin uses SQLite to cache JIRA data for better performance:
 
 - Cache location: `~/.local/share/nvim/jira/cache.sqlite3`
+- Cache TTL: 5 minutes (300 seconds) by default - expired data auto-refreshes on picker open
 - Refresh cache: `<M-r>` (default keymap) in picker or manually via actions
 - Clear cache: Delete the SQLite file
 
@@ -249,6 +250,25 @@ Cached data includes:
 - Epics
 - Issue previews
 - Available transitions (per project)
+
+### Configure Cache TTL
+
+```lua
+require("jira").setup({
+  cache = {
+    enabled = true,
+    cache_ttl = 300, -- Time-to-live in seconds (default: 300 = 5 minutes)
+  },
+})
+```
+
+### Footer Hints
+
+The picker displays a footer at the bottom showing available keybindings:
+- `<M-r>` Refresh cache
+- `<CR>` Open actions menu
+- `<M-t>` Transition issue
+- `<M-c>` Add comment
 
 ## Health Check
 
