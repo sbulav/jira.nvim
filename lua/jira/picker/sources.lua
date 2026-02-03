@@ -1,19 +1,23 @@
 local M = {}
 
 ---Builds the configuration for the JIRA issues picker.
+---@param issues_opts table|nil Custom issues opts
 ---@return snacks.picker.source The configuration for the JIRA issues picker
-local function source_jira_issues()
-  local config = require("jira.config").options
-  local keymaps = config.keymaps
+local function source_jira_issues(issues_opts)
+  local global_config = require("jira.config").options
+  local keymaps = global_config.keymaps
+  local merged_issues = vim.tbl_deep_extend("force", global_config.cli.issues, issues_opts or {})
 
   return {
-    title = "JIRA Issues",
-    layout = config.layout.issues,
-    finder = require("jira.picker.finders").get_jira_issues,
+    title = issues_opts and "JIRA Issues (Custom)" or "JIRA Issues",
+    layout = global_config.layout.issues,
+    finder = function(picker_opts, ctx)
+      return require("jira.picker.finders").get_jira_issues(picker_opts, ctx, merged_issues)
+    end,
     format = "format_jira_issues",
     preview = "preview_jira_issue",
     confirm = "action_jira_list_actions",
-    pattern = config.cli.issues.prefill_search,
+    pattern = merged_issues.prefill_search,
 
     win = {
       input = {
@@ -117,8 +121,13 @@ function M.jira_epic_issues(epic_key)
   }
 end
 
+function M.get_source_jira_issues(issues_opts)
+  return source_jira_issues(issues_opts)
+end
+
 M.source_jira_issues = source_jira_issues()
 M.source_jira_actions = source_jira_actions()
 M.source_jira_epics = source_jira_epics()
 M.source_jira_sprints = source_jira_sprints()
+
 return M

@@ -30,7 +30,7 @@ function M.register()
   -- Register sources
   local sources = require("jira.picker.sources")
   for name, source in pairs(sources) do
-    if name:match("^source_") then
+    if name:match("^source_") and type(source) == "table" then
       snacks.picker.sources[name] = source
     end
   end

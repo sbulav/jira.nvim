@@ -28,23 +28,25 @@ end
 --
 
 ---Build arguments for sprint list query
+---@param issues_config table|nil Custom issues config
 ---@return table args command arguments for jira CLI
-local function _build_sprint_list_args()
+local function _build_sprint_list_args(issues_config)
   local util = require("jira.util")
-  local config = require("jira.config").options
+  local global_config = require("jira.config").options
+  local config = issues_config or global_config.cli.issues
 
   if not util.has_jira_cli() then
     error("JIRA CLI not found. Please install: https://github.com/ankitpokhrel/jira-cli")
   end
 
-  local args = vim.deepcopy(config.cli.issues.args)
+  local args = vim.deepcopy(config.args)
 
-  vim.list_extend(args, config.cli.issues.filters)
-  vim.list_extend(args, { "--order-by", config.cli.issues.order_by })
-  vim.list_extend(args, { "--csv", "--columns", table.concat(config.cli.issues.columns, ",") })
+  vim.list_extend(args, config.filters)
+  vim.list_extend(args, { "--order-by", config.order_by })
+  vim.list_extend(args, { "--csv", "--columns", table.concat(config.columns, ",") })
 
-  if config.debug then
-    local cmd = { config.cli.cmd }
+  if global_config.debug then
+    local cmd = { global_config.cli.cmd }
     vim.list_extend(cmd, args)
     vim.notify("JIRA CLI Command:\n" .. _format_command_for_display(cmd), vim.log.levels.INFO)
   end
@@ -265,12 +267,12 @@ end
 ---Execute a Jira CLI command asynchronously
 ---@param args table Command arguments (e.g., {"issue", "edit", key, "--summary", title})
 ---@param opts table? Options table with:
----   - on_success: function(result) Callback on success
----   - on_error: function(result) Callback on error
----   - success_msg: string|function(result) Success notification message
----   - error_msg: string|function(result) Error notification message
----   - progress_msg: string Optional progress notification shown before execution
----   - stdin: string Optional stdin input for the command
+---  - on_success: function(result) Callback on success
+---  - on_error: function(result) Callback on error
+---  - success_msg: string|function(result) Success notification message
+---  - error_msg: string|function(result) Error notification message
+---  - progress_msg: string Optional progress notification shown before execution
+---  - stdin: string Optional stdin input for the command
 function M.execute(args, opts)
   vim.validate({
     args = { args, "table" },
@@ -697,9 +699,10 @@ function M.create_issue(issue_type, summary, description, opts)
 end
 
 ---Get sprint list arguments (for finders)
+---@param issues_config table|nil Custom issues config
 ---@return table args command arguments for sprint list query
-function M.get_sprint_list_args()
-  return _build_sprint_list_args()
+function M.get_sprint_list_args(issues_config)
+  return _build_sprint_list_args(issues_config)
 end
 
 ---Get epic list arguments (for finders)

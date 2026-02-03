@@ -26,7 +26,18 @@ function M.open_jira_issues(opts)
     require("jira.picker").register()
   end
 
-  return require("snacks").picker("source_jira_issues", opts)
+  local issues_opts = opts and opts.issues
+  if issues_opts then
+    opts.issues = nil
+    local snacks = require("snacks")
+    local sources = require("jira.picker.sources")
+    local custom_source = sources.get_source_jira_issues(issues_opts)
+    local custom_name = "source_jira_issues_custom_" .. tostring(vim.uv.now())
+    snacks.picker.sources[custom_name] = custom_source
+    return require("snacks").picker(custom_name, opts)
+  else
+    return require("snacks").picker("source_jira_issues", opts)
+  end
 end
 
 --- Open epic picker or epic issues picker

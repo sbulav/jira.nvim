@@ -31,16 +31,16 @@ end
 ---@param args_fn function Function that returns CLI arguments
 ---@param columns string[] Column names to map
 ---@param transform_fn function Function that transforms parsed data into picker item
+---@param global_config table Global plugin config for cmd
 ---@return snacks.picker.finder
-local function fetch_jira_data(args_fn, columns, transform_fn)
+local function fetch_jira_data(args_fn, columns, transform_fn, global_config)
   return function(opts, ctx)
-    local config = require("jira.config").options
     local args = args_fn(opts)
     local first_line = true
 
     return require("snacks.picker.source.proc").proc(
       ctx:opts({
-        cmd = config.cli.cmd,
+        cmd = global_config.cli.cmd,
         args = args,
         notify = true,
         ---@param item snacks.picker.finder.Item
@@ -66,7 +66,7 @@ local function fetch_jira_data(args_fn, columns, transform_fn)
           end
 
           -- Apply custom transformation
-          return transform_fn(data, config)
+          return transform_fn(data, global_config)
         end,
       }),
       ctx
@@ -122,9 +122,12 @@ end
 ---@param args_fn function Function that returns CLI arguments
 ---@param columns string[] Column names to map
 ---@param transform_fn function Function that transforms parsed data into picker item
+---@param issues_config table|nil Custom issues config
 ---@return snacks.picker.finder
-local function create_jira_finder(cache_key, cache_params, args_fn, columns, transform_fn)
-  local fetcher = fetch_jira_data(args_fn, columns, transform_fn)
+local function create_jira_finder(cache_key, cache_params, args_fn, columns, transform_fn, issues_config)
+  local global_config = require("jira.config").options
+  local effective_config = issues_config or global_config.cli.issues
+  local fetcher = fetch_jira_data(args_fn, columns, transform_fn, global_config)
   return with_cache(cache_key, cache_params, fetcher)
 end
 
@@ -175,23 +178,28 @@ local function transform_epic(epic, config)
 end
 
 ---@type snacks.picker.finder
-function M.get_jira_issues(opts, ctx)
-  local config = require("jira.config").options
+function M.get_jira_issues(opts, ctx, issues_config)
+  local global_config = require("jira.config").options
   local cli = require("jira.cli")
   local cache = require("jira.cache")
 
+  local effective_config = issues_config or global_config.cli.issues
+  local cache_key = issues_config and (cache.keys.ISSUES .. "_" .. vim.fn.sha256(vim.inspect(issues_config))) or cache.keys.ISSUES
+  local args_fn = function(_) return cli.get_sprint_list_args(effective_config) end
+
   return create_jira_finder(
-    cache.keys.ISSUES,
+    cache_key,
     nil,
-    cli.get_sprint_list_args,
-    config.cli.issues.columns,
-    transform_issue
+    args_fn,
+    effective_config.columns,
+    transform_issue,
+    issues_config
   )(opts, ctx)
 end
 
 ---@type snacks.picker.finder
 function M.get_jira_epics(opts, ctx)
-  local config = require("jira.config").options
+  local global_config = require("jira.config").options
   local cli = require("jira.cli")
   local cache = require("jira.cache")
 
@@ -199,8 +207,9 @@ function M.get_jira_epics(opts, ctx)
     cache.keys.EPICS,
     nil,
     cli.get_epic_list_args,
-    config.cli.epics.columns,
-    transform_epic
+    global_config.cli.epics.columns,
+    transform_epic,
+    nil
   )(opts, ctx)
 end
 
@@ -214,16 +223,19 @@ function M.get_jira_epic_issues(epic_key, opts, ctx)
     error("epic_key is required for get_jira_epic_issues")
   end
 
-  local config = require("jira.config").options
+  local global_config = require("jira.config").options
   local cli = require("jira.cli")
   local cache = require("jira.cache")
+
+  local args_fn = function() return cli.get_epic_issues_args(epic_key) end
 
   return create_jira_finder(
     cache.keys.EPIC_ISSUES,
     { epic_key = epic_key },
-    function() return cli.get_epic_issues_args(epic_key) end,
-    config.cli.epic_issues.columns,
-    transform_issue
+    args_fn,
+    global_config.cli.epic_issues.columns,
+    transform_issue,
+    nil
   )(opts, ctx)
 end
 
