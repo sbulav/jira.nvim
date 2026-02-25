@@ -83,6 +83,29 @@ local defaults = {
       ---@type jira.StartWorkDoneCallback?
       on_done = nil,
     },
+    -- Action for creating issue via scratch buffer
+    create = {
+      default_fields = {
+        Project = vim.env.JIRA_PROJECT_KEY or "",
+        Type = "Task",
+        Assignee = vim.env.JIRA_ASSIGNEE or vim.env.JIRA_USER or "",
+        Component = "",
+        Labels = "",
+        Epic = "",
+        Custom = "",
+      },
+      template = [[
+Необходимо:
+
+Полезную информацию можно найти здесь:
+* 
+
+h2. Критерий принятия:
+* 1
+* 2
+* 3
+]],
+    },
   },
 
   -- Issue preview configuration

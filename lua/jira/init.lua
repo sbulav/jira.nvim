@@ -80,4 +80,13 @@ function M.start_working_on(opts)
   actions.start_work_on_issue(issue_key)
 end
 
+--- Create a new JIRA issue using a scratch buffer
+function M.create_issue()
+  if not package.loaded["snacks"] then
+    vim.notify("jira.nvim requires snacks.nvim", vim.log.levels.ERROR)
+    return
+  end
+  require("jira.create").open()
+end
+
 return M

@@ -15,3 +15,9 @@ vim.api.nvim_create_user_command(
   require("jira").start_working_on,
   { nargs = 1, desc = "Start working on a JIRA issue (assign, sprint, transition, git branch)" }
 )
+
+vim.api.nvim_create_user_command(
+  "JiraCreateIssue",
+  require("jira").create_issue,
+  { desc = "Create a JIRA issue using a scratch buffer" }
+)

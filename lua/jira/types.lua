@@ -68,8 +68,13 @@
 ---@field steps? jira.ActionStartWorkSteps configure which steps to execute (all enabled by default)
 ---@field on_done? jira.StartWorkDoneCallback Optional callback invoked after all steps complete
 
+---@class jira.ActionCreateConfig
+---@field default_fields table<string, string|fun():string> Default frontmatter fields for new issues
+---@field template string Default description template
+
 ---@class jira.ActionConfig
 ---@field start_work jira.ActionStartWorkConfig Start work action settings
+---@field create jira.ActionCreateConfig Create scratch action settings
 
 ---@class jira.Config
 ---@field cli jira.CliConfig CLI settings

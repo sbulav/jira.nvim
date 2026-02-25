@@ -41,6 +41,11 @@ local metadata = {
     icon = " ",
     priority = 60,
   },
+  create_issue_scratch = {
+    name = "Create issue (scratch buffer)",
+    priority = 56,
+    icon = "󰄮 ",
+  },
   create_issue = {
     name = "Create issue",
     priority = 55,
