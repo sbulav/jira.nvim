@@ -70,6 +70,7 @@
 
 ---@class jira.ActionCreateConfig
 ---@field default_fields table<string, string|fun():string> Default frontmatter fields for new issues
+---@field available_components string[] List of available components for selection
 ---@field template string Default description template
 
 ---@class jira.ActionConfig

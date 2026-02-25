@@ -102,4 +102,74 @@ function M.fetch_issue_types(callback)
   end)
 end
 
+local function parse_csv_line(line)
+  local values = {}
+  local current = ""
+  local in_quotes = false
+  local i = 1
+
+  while i <= #line do
+    local char = line:sub(i, i)
+    if char == '"' then
+      in_quotes = not in_quotes
+    elseif char == "," and not in_quotes then
+      table.insert(values, current)
+      current = ""
+    else
+      current = current .. char
+    end
+    i = i + 1
+  end
+  table.insert(values, current)
+  return values
+end
+
+---Fetch epics list for create scratch buffer
+---@param callback fun(epics: {key: string, summary: string}[]?)
+function M.fetch_epics_for_create(callback)
+  local cached = cache.get(cache.keys.EPICS)
+  if cached and cached.items then
+    local epics = {}
+    for _, item in ipairs(cached.items) do
+      if item.key and item.summary then
+        table.insert(epics, { key = item.key, summary = item.summary })
+      end
+    end
+    callback(#epics > 0 and epics or nil)
+    return
+  end
+
+  local config = require("jira.config").options
+  local args = cli.get_epic_list_args()
+  vim.list_extend(args, { "--csv", "--columns", "key,summary" })
+
+  local cmd = { config.cli.cmd }
+  vim.list_extend(cmd, args)
+
+  vim.system(cmd, { text = true }, function(result)
+    vim.schedule(function()
+      if result.code ~= 0 then
+        callback(nil)
+        return
+      end
+
+      local epics = {}
+      local first_line = true
+      for line in result.stdout:gmatch("[^\r\n]+") do
+        if first_line then
+          first_line = false
+        else
+          local values = parse_csv_line(line)
+          if #values >= 2 then
+            local summary = values[2]:gsub("%[([^%]]+)%[%]", "[%1]")
+            table.insert(epics, { key = values[1], summary = summary })
+          end
+        end
+      end
+
+      callback(#epics > 0 and epics or nil)
+    end)
+  end)
+end
+
 return M

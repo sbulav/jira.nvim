@@ -87,12 +87,19 @@ local defaults = {
     create = {
       default_fields = {
         Project = vim.env.JIRA_PROJECT_KEY or "",
-        Type = "Task",
-        Assignee = vim.env.JIRA_ASSIGNEE or vim.env.JIRA_USER or "",
-        Component = "",
-        Labels = "",
         Epic = "",
+        Type = "Task",
+        Components = "",
+        Labels = "",
+        Assignee = vim.env.JIRA_ASSIGNEE or vim.env.JIRA_USER or "",
         Custom = "",
+      },
+      -- Available components for selection picker (<C-o> in scratch buffer)
+      -- Edit this list to match your JIRA project's components
+      available_components = {
+        -- "Backend",
+        -- "Frontend",
+        -- "K8s & RnD",
       },
       template = [[
 Необходимо:

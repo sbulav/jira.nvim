@@ -72,24 +72,33 @@ function M.submit(win)
   end
 
   if fields["Epic"] and fields["Epic"] ~= "" then
-    table.insert(args, "-P")
-    table.insert(args, fields["Epic"])
+    -- Extract just the key from "KEY: Summary" format
+    local epic_key = fields["Epic"]:match("^([A-Z0-9]+-[0-9]+)")
+    if epic_key then
+      table.insert(args, "-P")
+      table.insert(args, epic_key)
+    end
   end
 
   -- Handle multiple labels
   if fields["Labels"] and fields["Labels"] ~= "" then
-    for label in string.gmatch(fields["Labels"], "[^, ]+") do
-      table.insert(args, "-l")
-      table.insert(args, label)
+    for label in string.gmatch(fields["Labels"], "[^,]+") do
+      label = vim.trim(label)
+      if label ~= "" then
+        table.insert(args, "-l")
+        table.insert(args, label)
+      end
     end
   end
 
-  -- Handle multiple components (Component or Components)
-  local component_value = fields["Component"] ~= "" and fields["Component"] or fields["Components"]
-  if component_value and component_value ~= "" then
-    for comp in string.gmatch(component_value, "[^, ]+") do
-      table.insert(args, "-C")
-      table.insert(args, comp)
+  -- Handle multiple components
+  if fields["Components"] and fields["Components"] ~= "" then
+    for comp in string.gmatch(fields["Components"], "[^,]+") do
+      comp = vim.trim(comp)
+      if comp ~= "" then
+        table.insert(args, "-C")
+        table.insert(args, comp)
+      end
     end
   end
 
@@ -157,15 +166,133 @@ function M.submit(win)
   })
 end
 
+---Find line number for a field in frontmatter
+---@param buf number Buffer handle
+---@param field string Field name to find
+---@return number? line Line number (1-indexed) or nil if not found
+local function find_field_line(buf, field)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  for i, line in ipairs(lines) do
+    if line:match("^" .. field .. ":") then
+      return i
+    end
+  end
+  return nil
+end
+
+---Update a field value in the frontmatter
+---@param buf number Buffer handle
+---@param field string Field name
+---@param value string New value
+local function update_field(buf, field, value)
+  local line_nr = find_field_line(buf, field)
+  if line_nr then
+    vim.api.nvim_buf_set_lines(buf, line_nr - 1, line_nr, false, { string.format("%s: %s", field, value) })
+  end
+end
+
+---Open epic picker for selection
+---@param win snacks.win
+local function pick_epic(win)
+  if not win or not win:valid() then
+    return
+  end
+
+  require("snacks").picker("source_jira_epics", {
+    confirm = function(picker, item)
+      picker:close()
+      if item and item.key then
+        local display = item.key
+        if item.summary and item.summary ~= "" then
+          display = string.format("%s: %s", item.key, item.summary)
+        end
+        update_field(win.buf, "Epic", display)
+      end
+    end,
+  })
+end
+
+---Open components picker for selection (multi-select)
+---@param win snacks.win
+local function pick_components(win)
+  if not win or not win:valid() then
+    return
+  end
+
+  local opts = config.options.action.create or {}
+  local components = opts.available_components or {}
+
+  if #components == 0 then
+    vim.notify("No components configured. Add them to config.action.create.available_components", vim.log.levels.WARN)
+    return
+  end
+
+  local buf = win.buf
+  local current_line = find_field_line(buf, "Components")
+  local current_value = ""
+  if current_line then
+    local lines = vim.api.nvim_buf_get_lines(buf, current_line - 1, current_line, false)
+    current_value = lines[1]:gsub("^Components:%s*", "")
+  end
+  local current_components = {}
+  for comp in current_value:gmatch("[^,]+") do
+    comp = vim.trim(comp)
+    if comp ~= "" then
+      current_components[comp] = true
+    end
+  end
+
+  local items = {}
+  for i, comp in ipairs(components) do
+    local icon = current_components[comp] and "✓ " or "  "
+    table.insert(items, {
+      text = icon .. comp,
+      comp = comp,
+      selected = current_components[comp] or false,
+      idx = i,
+    })
+  end
+
+  require("snacks").picker({
+    title = "Select Components",
+    layout = { preset = "select" },
+    main = { current = true },
+    items = items,
+    format = "text",
+    confirm = function(picker, item)
+      picker:close()
+      if not item then
+        return
+      end
+
+      current_components[item.comp] = not current_components[item.comp]
+
+      local selected = {}
+      for comp, sel in pairs(current_components) do
+        if sel then
+          table.insert(selected, comp)
+        end
+      end
+
+      update_field(buf, "Components", table.concat(selected, ", "))
+    end,
+  })
+end
+
 ---Open scratch buffer to create a new Jira issue
 function M.open()
   local opts = config.options.action.create or { default_fields = {}, template = "" }
   local default_fields = opts.default_fields or {}
 
+  local field_order = { "Project", "Epic", "Type", "Components", "Labels", "Assignee", "Custom" }
+
   local fm = { "---" }
-  for k, v in pairs(default_fields) do
-    local val = type(v) == "function" and v() or v
-    fm[#fm + 1] = string.format("%s: %s", k, val)
+  for _, field in ipairs(field_order) do
+    local v = default_fields[field]
+    if v then
+      local val = type(v) == "function" and v() or v
+      fm[#fm + 1] = string.format("%s: %s", field, val)
+    end
   end
   fm[#fm + 1] = "---\n"
   fm[#fm + 1] = "Summary: "
@@ -192,10 +319,26 @@ function M.open()
       keys = {
         submit = {
           "<c-s>",
-          function(win)
-            M.submit(win)
+          function(w)
+            M.submit(w)
           end,
           desc = "Submit and create issue",
+          mode = { "n", "i" },
+        },
+        epic_picker = {
+          "<c-e>",
+          function(w)
+            pick_epic(w)
+          end,
+          desc = "Select epic",
+          mode = { "n", "i" },
+        },
+        components_picker = {
+          "<c-o>",
+          function(w)
+            pick_components(w)
+          end,
+          desc = "Select components",
           mode = { "n", "i" },
         },
       },
